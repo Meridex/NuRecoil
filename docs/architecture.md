@@ -66,3 +66,24 @@ $$
 ## Quenching Factor
 
 There are many different choices for the quenching factor. Linhard is the most commonly used one which depends on several phenomenological parameters. Other quenching factor can also be used.
+
+### Linhard Quenching Factor
+
+See [arXiv: 1608.03588] and references therein.
+
+$$
+\begin{align*}
+f_Q &= \frac{\kappa g(\epsilon)}{1+\kappa g(\epsilon)}\\
+\kappa &\approx 0.133 \frac{Z^{2/3}}{A^{1/2}}\\
+g &= 3\epsilon^{0.15}+0.7\epsilon^{0.6}+\epsilon\\
+\epsilon &= 11.5 \frac{E_R}{\rm keV} Z^{-7/3}
+\end{align*}
+$$
+
+## Energy Resolution
+
+Following CDEX measurements:
+
+$$
+\frac{\Delta E}{\rm eV} = 35.8 + 16.6\times \left(\frac{E}{\rm keV}\right)^{1/2}
+$$
