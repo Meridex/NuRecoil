@@ -12,7 +12,7 @@ $$
 - $\frac{d\Phi}{dE_\nu}$ is the neutrino flux
 - $\frac{d\sigma}{dE_R}(E_\nu, E_R)$ is the differential cross section (wrt. the recoil energy) as function of the incoming neutrino energy and the recoil energy
 - $f_Q(E_R)$ is the quenching factor at given recoil energy such that the actual energy that can be measured is given as $E_R^{ee}=f_Q\times E_R$
-- $f_{\rm res}(f_QE_R,E_{\rm det})$ is the resolution function which is assumed to be Gaussian: $f_{\rm res} = \frac{1}{\sqrt{2\pi}\Delta E}e^{-\frac{(E_R-E_{\rm det})^2}{2\Delta E^2}}$ which has been correctly normalized. $\Delta E$ is the resolution depending on the experiments
+- $f_{\rm res}(E^{ee},E_{\rm det})$ is the resolution function which is assumed to be Gaussian: $f_{\rm res}(E^{ee},E_{\rm det}) = \frac{1}{\sqrt{2\pi}\Delta E}e^{-\frac{(E^{ee}-E_{\rm det})^2}{2\Delta E^2}}$ which has been correctly normalized. Here $E^{ee} = f_Q(E_R)E_R$ is the electron-equivalent (quenched) energy. $\Delta E$ is the resolution depending on the experiments
 
 ## The neutrino flux
 
