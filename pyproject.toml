@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "nurecoil"
+version = "0.1.0"
+description = "CEvNS event-rate calculator for reactor-neutrino experiments"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+conflux = ["conflux"]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "matplotlib>=3.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nurecoil*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
