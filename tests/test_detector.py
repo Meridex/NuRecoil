@@ -52,7 +52,7 @@ class TestCDEXResolution:
         # At E_ee = 1 keV = 1e-3 MeV:
         # ΔE [eV] = 35.8 + 16.6×√1 = 52.4 eV  → 52.4e-6 MeV
         E_ee = 1e-3  # MeV = 1 keV
-        sigma = float(self.res.sigma(np.array([E_ee])))
+        sigma = self.res.sigma(np.array([E_ee]))[0]
         expected = (35.8 + 16.6 * 1.0) / C.eV_per_MeV
         assert sigma == pytest.approx(expected, rel=1e-6)
 
@@ -61,7 +61,7 @@ class TestCDEXResolution:
         E_ee  = np.array([0.01])  # MeV
         E_det = np.linspace(0.0, 0.05, 5000)
         kernel = self.res.smear(E_ee, E_det)  # (1, 5000) MeV⁻¹
-        integral = np.trapz(kernel[0], E_det)
+        integral = np.trapezoid(kernel[0], E_det)
         assert integral == pytest.approx(1.0, abs=1e-3)
 
 
