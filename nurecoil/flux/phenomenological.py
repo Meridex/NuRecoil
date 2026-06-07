@@ -1,15 +1,15 @@
-"""
-Huber–Mueller phenomenological antineutrino flux.
+r"""
+Huber-Mueller phenomenological antineutrino flux.
 
 Units (API boundary)
 --------------------
     E_nu : MeV
-    P    : GW   → converted to fissions/s on entry
-    L    : m    → converted to cm on entry
+    P    : GW   (converted to fissions/s on entry)
+    L    : m    (converted to cm on entry)
 
 Units (internal / output)
 --------------------------
-    dΦ/dE_ν : # / MeV / cm²
+    $d\Phi/dE_\nu$ : # / MeV / cm^2
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from nurecoil.flux.base import FluxBase
 
 
 # Huber (2011) + Mueller et al. (2011) polynomial coefficients
-# S_k(E_nu) = exp(Σ a_i^(k) E_nu^i)  with E_nu in MeV
+# $S_k(E_\nu) = \exp(\sum_i a_i^{(k)} E_\nu^i)$  with $E_\nu$ in MeV
 # Keys: fissile isotope labels
 _HUBER_MUELLER_COEFFS: dict[str, list[float]] = {
     # 235U — Huber 2011 (table III)
@@ -88,8 +88,8 @@ class PhenomenologicalFlux(FluxBase):
         return spectrum
 
     def __call__(self, E_nu: ArrayLike, P: float, L: float) -> NDArray:
-        """
-        Evaluate dΦ/dE_ν [# / MeV / cm²].
+        r"""
+        Evaluate $d\Phi/dE_\nu$ [# / MeV / cm^2].
 
         Parameters
         ----------
@@ -108,5 +108,5 @@ class PhenomenologicalFlux(FluxBase):
 
         spectrum = self._spectrum_per_fission(E_nu_arr)  # # / MeV / fission
 
-        # dΦ/dE_ν = fission_rate × spectrum × 1 / (4π L²)
+        # dPhi/dE_nu = fission_rate * spectrum / (4 pi L^2)
         return fission_rate * spectrum / (4.0 * np.pi * L_cm ** 2)

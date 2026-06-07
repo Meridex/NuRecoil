@@ -4,25 +4,31 @@ SM CEvNS differential cross section.
 Units
 -----
     E_nu, E_R, M  : MeV
-    G_F           : MeV⁻²  (= constants.G_F)
-    |q⃗|           : MeV  (natural units, ℏ = c = 1)
-    dσ/dE_R       : cm² / MeV
+    G_F           : $\\mathrm{MeV}^{-2}$  (= constants.G_F)
+    |q|           : MeV  (natural units, $\\hbar = c = 1$)
+    $d\\sigma/dE_R$  : cm^2 / MeV
 
 The cross-section formula is
 
-    dσ/dE_R = (G_F² M / π) · K(E_ν, E_R) · |Q_W(|q⃗|)|²
+.. math::
 
-with
+    \\frac{d\\sigma}{dE_R} = \\frac{G_F^2\\,M}{\\pi}
+    \\left(1 - \\frac{E_R}{E_\\nu}
+         + \\frac{1}{2}\\!\\left(\\frac{E_R}{E_\\nu}\\right)^{\\!2}
+         - \\frac{M E_R}{2 E_\\nu^2}\\right)
+    \\left|Q_W\\!\\left(|\\vec{q}|\\right)\\right|^2
 
-    K = 1 − E_R/E_ν + ½(E_R/E_ν)² − M E_R / (2 E_ν²)
-    |q⃗| ≈ √(2 M E_R)   [MeV, natural units]
-    Q_W = g_V^n N F_N(|q⃗|) + g_V^p Z F_Z(|q⃗|)
+where $|\\vec{q}| \\approx \\sqrt{2 M E_R}$ [MeV] and
+$Q_W = g_V^n N F_N + g_V^p Z F_Z$.
 
-The output is in cm² / MeV.  The conversion from natural-unit MeV⁻² comes
-from multiplying by (ℏc)² [MeV·fm]² / (ℏc / fm_per_cm)² — concretely:
+Unit conversion from natural units ($\\mathrm{MeV}^{-2}$) to $\\mathrm{cm}^2$:
 
-    σ [cm²] = σ [MeV⁻²] × (ℏc [MeV·fm])² × (fm_per_cm [fm/cm])⁻²
-             = σ [MeV⁻²] × hbar_c² × cm_per_fm²
+.. math::
+
+    \\sigma\\,[\\mathrm{cm}^2]
+    = \\sigma\\,[\\mathrm{MeV}^{-2}]
+      \\times (\\hbar c)^2\\,[\\mathrm{MeV}^2 \\cdot \\mathrm{fm}^2]
+      \\times (10^{-13}\\,\\mathrm{cm/fm})^2
 
 References
 ----------
@@ -42,7 +48,7 @@ from nurecoil.cross_section.form_factors import FormFactorBase, HelmFormFactor
 
 class SMCEvNS(CrossSectionBase):
     """
-    Standard Model CEvNS differential cross section dσ/dE_R.
+    Standard Model CEvNS differential cross section $d\\sigma/dE_R$.
 
     Parameters
     ----------
@@ -64,19 +70,19 @@ class SMCEvNS(CrossSectionBase):
         )
 
         # Vector couplings (SM tree-level)
-        # g_V^p = T₃ − 2 Q sin²θ_W = 1/2 − 2·(+1)·sin²θ_W
-        # g_V^n = T₃ − 2 Q sin²θ_W = −1/2 − 2·(0)·sin²θ_W  = −1/2
+        # $g_V^p = T_3 - 2Q\sin^2\theta_W = +1/2 - 2(+1)\sin^2\theta_W$
+        # $g_V^n = T_3 - 2Q\sin^2\theta_W = -1/2 - 2(0)\sin^2\theta_W = -1/2$
         s2w = constants.sin2_theta_W
         self._g_V_p: float =  0.5 - 2.0 * s2w
         self._g_V_n: float = -0.5
 
-        # Unit conversion factor: MeV⁻² → cm²
-        # σ [cm²] = σ_nat [MeV⁻²] × (ℏc)² [MeV²·fm²] × (cm_per_fm)² [cm²/fm²]
+        # Unit conversion: MeV^{-2} -> cm^2
+        # $\sigma\ [\mathrm{cm}^2] = \sigma\ [\mathrm{MeV}^{-2}] \times (\hbar c)^2 \times (\mathrm{cm/fm})^2$
         self._unit: float = constants.hbar_c ** 2 * constants.cm_per_fm ** 2
 
     def __call__(self, E_nu: ArrayLike, E_R: ArrayLike) -> NDArray:
-        """
-        Evaluate dσ/dE_R.
+        r"""
+        Evaluate $d\sigma/dE_R$.
 
         Parameters
         ----------
@@ -88,7 +94,7 @@ class SMCEvNS(CrossSectionBase):
         Returns
         -------
         NDArray
-            dσ/dE_R  [cm² / MeV].  Returns 0 outside the valid kinematic region.
+            $d\sigma/dE_R$  [cm^2 / MeV].  Returns 0 outside the valid kinematic region.
         """
         E_nu_arr = np.asarray(E_nu, dtype=float)
         E_R_arr  = np.asarray(E_R,  dtype=float)
@@ -101,20 +107,20 @@ class SMCEvNS(CrossSectionBase):
         r = E_R_arr / E_nu_arr
         K = 1.0 - r + 0.5 * r ** 2 - M * E_R_arr / (2.0 * E_nu_arr ** 2)
 
-        # Momentum transfer |q⃗| [MeV]
+        # Momentum transfer $|\vec{q}| \approx \sqrt{2 M E_R}$ [MeV]
         q = np.sqrt(np.maximum(2.0 * M * E_R_arr, 0.0))
 
         # Form factors (evaluated once; assumed same for n and p here)
         F = self.form_factor(q, self.nucleus)
 
-        # Weak charge Q_W
+        # Weak charge: $Q_W = g_V^n N F + g_V^p Z F$
         Q_W = self._g_V_n * N * F + self._g_V_p * Z * F
 
-        # Prefactor G_F² M / π  [MeV⁻³]  (G_F in MeV⁻², M in MeV)
+        # Prefactor $G_F^2 M / \pi$ [MeV^{-3}]  (G_F in MeV^{-2}, M in MeV)
         prefactor = constants.G_F ** 2 * M / np.pi
 
-        # dσ/dE_R in natural units [MeV⁻³], then convert to [cm²/MeV]
-        dsigma = prefactor * K * Q_W ** 2 * self._unit  # [cm²/MeV]
+        # d sigma/dE_R in natural units [MeV^{-3}], then convert to [cm^2/MeV]
+        dsigma = prefactor * K * Q_W ** 2 * self._unit  # [cm^2/MeV]
 
         # Zero outside kinematic region
         E_R_max = self.E_R_max(E_nu_arr)

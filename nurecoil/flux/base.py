@@ -1,4 +1,4 @@
-"""
+r"""
 Abstract base class for neutrino flux implementations.
 
 Units (API boundary)
@@ -9,7 +9,7 @@ Units (API boundary)
 
 Units (internal / output)
 --------------------------
-    dΦ/dE_ν : # / MeV / cm²
+    $d\Phi/dE_\nu$ : # / MeV / cm^2
 
 Implementations must convert P and L on entry:
     L_cm          = L_m  * constants.cm_per_m
@@ -25,16 +25,16 @@ from numpy.typing import ArrayLike, NDArray
 
 
 class FluxBase(ABC):
-    """
+    r"""
     Abstract base class for antineutrino flux models.
 
     All subclasses must implement ``__call__`` and return the differential
-    flux dΦ/dE_ν in units of  **# / MeV / cm²**.
+    flux $d\Phi/dE_\nu$ in units of **# / MeV / cm^2**.
     """
 
     @abstractmethod
     def __call__(self, E_nu: ArrayLike, P: float, L: float) -> NDArray:
-        """
+        r"""
         Evaluate the differential antineutrino flux.
 
         Parameters
@@ -49,6 +49,6 @@ class FluxBase(ABC):
         Returns
         -------
         NDArray
-            dΦ/dE_ν  [# / MeV / cm²],  same shape as *E_nu*.
+            $d\Phi/dE_\nu$  [# / MeV / cm^2],  same shape as *E_nu*.
         """
         ...

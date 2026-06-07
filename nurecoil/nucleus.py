@@ -45,7 +45,7 @@ class Nucleus:
 
     @property
     def M(self) -> float:
-        """Nuclear mass in MeV  (approximation M ≈ A·u, < 0.1 % for A > 10)."""
+        """Nuclear mass in MeV  (approximation $M \\approx A \\cdot u$, < 0.1 % for A > 10)."""
         return self.A * constants.u_to_MeV
 
     def __repr__(self) -> str:

@@ -1,11 +1,11 @@
-"""
+r"""
 Abstract base class for differential cross-section models.
 
 Units
 -----
     E_nu : MeV  (neutrino energy)
     E_R  : MeV  (nuclear recoil energy)
-    dσ/dE_R : cm² / MeV
+    $d\sigma/dE_R$ : cm^{2} / MeV
 """
 
 from __future__ import annotations
@@ -33,8 +33,8 @@ class CrossSectionBase(ABC):
 
     @abstractmethod
     def __call__(self, E_nu: ArrayLike, E_R: ArrayLike) -> NDArray:
-        """
-        Evaluate dσ/dE_R.
+        r"""
+        Evaluate $d\sigma/dE_R$.
 
         Parameters
         ----------
@@ -46,7 +46,7 @@ class CrossSectionBase(ABC):
         Returns
         -------
         NDArray
-            dσ/dE_R  [cm² / MeV].  Must be ≥ 0 everywhere; return 0 (not
+            $d\sigma/dE_R$  [cm^2 / MeV].  Must be >= 0 everywhere; return 0 (not
             NaN) outside the valid kinematic region.
         """
         ...
@@ -63,7 +63,7 @@ class CrossSectionBase(ABC):
         Returns
         -------
         float
-            E_R^max [MeV] = 2 E_ν² / (M + 2 E_ν).
+            $E_R^{\\max}$ [MeV] $= 2 E_\\nu^2 / (M + 2 E_\\nu)$.
         """
         M = self.nucleus.M
         return 2.0 * E_nu ** 2 / (M + 2.0 * E_nu)

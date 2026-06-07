@@ -50,12 +50,14 @@ class LindhardQuenching(QuenchingBase):
 
     Formula
     -------
-    ε = 11.5 · (E_R / keV) · Z^{-7/3}
-    g = 3ε^{0.15} + 0.7ε^{0.6} + ε
-    κ = 0.133 · Z^{2/3} · A^{-1/2}
-    f_Q = κg / (1 + κg)
+    .. math::
 
-    Valid for E_R ≳ a few eV; returns f_Q = 0 below ``E_R_threshold_MeV``.
+        \\varepsilon &= 11.5 \\cdot (E_R / \\mathrm{keV}) \\cdot Z^{-7/3} \\\\\\
+        g &= 3\\varepsilon^{0.15} + 0.7\\varepsilon^{0.6} + \\varepsilon \\\\\\
+        \\kappa &= 0.133 \\cdot Z^{2/3} \\cdot A^{-1/2} \\\\\\
+        f_Q &= \\kappa g \\;/\\; (1 + \\kappa g)
+
+    Valid for $E_R \\gtrsim$ a few eV; returns $f_Q = 0$ below ``E_R_threshold_MeV``.
     """
 
     #: Minimum recoil energy below which f_Q is set to zero [MeV]
@@ -65,12 +67,12 @@ class LindhardQuenching(QuenchingBase):
         E_R_arr = np.asarray(E_R, dtype=float)
         Z, A = nucleus.Z, nucleus.A
 
-        # Convert MeV → keV for the Lindhard formula
+        # Convert MeV -> keV for the Lindhard formula
         E_R_keV = E_R_arr * constants.keV_per_MeV
 
-        epsilon = 11.5 * E_R_keV * Z ** (-7.0 / 3.0)
+        epsilon = 11.5 * E_R_keV * Z ** (-7.0 / 3.0)  # dimensionless: epsilon
         g       = 3.0 * epsilon ** 0.15 + 0.7 * epsilon ** 0.6 + epsilon
-        kappa   = 0.133 * Z ** (2.0 / 3.0) * A ** (-0.5)
+        kappa   = 0.133 * Z ** (2.0 / 3.0) * A ** (-0.5)  # kappa
 
         kg  = kappa * g
         f_Q = kg / (1.0 + kg)

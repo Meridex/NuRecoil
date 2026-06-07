@@ -3,14 +3,14 @@ Energy-resolution smearing classes.
 
 Units
 -----
-    E_ee  : MeV  (electron-equivalent energy = f_Q · E_R, internal canonical unit)
+    E_ee  : MeV  (electron-equivalent energy $= f_Q \\cdot E_R$, internal canonical unit)
     E_det : MeV  (detected energy axis)
-    ΔE    : MeV  (energy resolution, stored internally in MeV)
-    f_res : MeV⁻¹  (normalised Gaussian kernel)
+    Delta_E : MeV  (energy resolution, stored internally in MeV)
+    f_res : MeV^{-1}  (normalised Gaussian kernel)
 
 Literature formulas that use eV or keV must convert:
-    Input  E_ee [MeV] → keV  via  constants.keV_per_MeV
-    Output ΔE   [eV]  → MeV  via  1 / constants.eV_per_MeV
+    Input  E_ee [MeV]  ->  keV  via  constants.keV_per_MeV
+    Output Delta_E [eV] ->  MeV  via  1 / constants.eV_per_MeV
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ class ResolutionBase(ABC):
         Returns
         -------
         NDArray
-            ΔE(E_ee)  [MeV].
+            $\\Delta E(E_{ee})$  [MeV].
         """
         ...
 
@@ -47,9 +47,12 @@ class ResolutionBase(ABC):
         """
         Gaussian resolution kernel f_res(E_ee, E_det).
 
-        f_res = (1 / (√2π ΔE)) · exp[−(E_ee − E_det)² / (2 ΔE²)]
+        .. math::
 
-        All quantities in MeV; output integrates to 1 over E_det [MeV].
+            f_{\\mathrm{res}} = \\frac{1}{\\sqrt{2\\pi}\\,\\Delta E}
+            \\exp\\!\\left[-\\frac{(E_{ee} - E_{\\mathrm{det}})^2}{2\\,\\Delta E^2}\\right]
+
+        All quantities in MeV; output integrates to 1 over $E_{\\mathrm{det}}$ [MeV].
 
         Parameters
         ----------
@@ -61,7 +64,7 @@ class ResolutionBase(ABC):
         Returns
         -------
         NDArray, shape (n, m)
-            f_res [MeV⁻¹].
+            f_res [MeV^{-1}].
         """
         E_ee_arr  = np.asarray(E_ee,  dtype=float)[:, np.newaxis]  # (n, 1)
         E_det_arr = np.asarray(E_det, dtype=float)[np.newaxis, :]  # (1, m)
@@ -78,13 +81,16 @@ class CDEXResolution(ResolutionBase):
     CDEX energy-resolution model.
 
     Literature formula (in experimental units):
-        ΔE [eV] = 35.8 + 16.6 × (E [keV])^{1/2}
 
-    where E is the electron-equivalent energy E^{ee} = f_Q · E_R.
+    .. math::
+
+        \\Delta E\\,[\\mathrm{eV}] = 35.8 + 16.6 \\times (E\\,[\\mathrm{keV}])^{1/2}
+
+    where $E$ is the electron-equivalent energy $E^{ee} = f_Q \\cdot E_R$.
 
     Unit conversion inside ``sigma``:
-        E_keV  = E_ee_MeV × constants.keV_per_MeV
-        ΔE_MeV = (35.8 + 16.6 × E_keV^{0.5}) / constants.eV_per_MeV
+        E_keV  = E_ee_MeV * constants.keV_per_MeV
+        Delta_E_MeV = (35.8 + 16.6 * E_keV^{0.5}) / constants.eV_per_MeV
     """
 
     def sigma(self, E_ee: ArrayLike) -> NDArray:
