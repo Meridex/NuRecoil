@@ -54,7 +54,7 @@ _DEFAULT_FISSION_FRACTIONS: dict[str, float] = {
 
 class PhenomenologicalFlux(FluxBase):
     """
-    Phenomenological antineutrino flux using Huber–Mueller parametrisation.
+    Phenomenological antineutrino flux using Huber-Mueller parametrisation.
 
     Parameters
     ----------
