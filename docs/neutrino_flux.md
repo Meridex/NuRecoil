@@ -61,3 +61,85 @@ Another quantity we need to implement is the effective thermal energy released p
 
 The neutrino spectrum per fission for different actinides
 
+- From [arXiv: 1101.2663, TABLE VI] valid from 2 MeV to 8 MeV
+	- $\frac{dN_{k}}{dE_{\nu}}\equiv S_{k}(E_{\nu}) = \exp\left( \sum_{p=1}^{6}\alpha_{pk}E_{\nu}^{p-1} \right)$
+	- $k=U_{235}$:
+		- $\alpha_{1}=3.217$
+		- $\alpha_{2}=-3.111$
+		- $\alpha_{3}=1.395$
+		- $\alpha_{4}=-3.690\times 10^{-1}$
+		- $\alpha_{5}=4.445\times 10^{-2}$
+		- $\alpha_{6}=-2.053\times 10^{-3}$
+	- $k=U_{238}$:
+		- $\alpha_{1}=4.833\times 10^{-1}$
+		- $\alpha_{2}=1.927\times 10^{-1}$
+		- $\alpha_{3}=-1.283\times 10^{-1}$
+		- $\alpha_{4}=-6.762\times 10^{-3}$
+		- $\alpha_{5}=2.233\times 10^{-3}$
+		- $\alpha_{6}=-1.536 \times 10^{-4}$
+	- $k=Pu_{239}$:
+		- $\alpha_{1}=6.413$
+		- $\alpha_{2}=-7.432$
+		- $\alpha_{3}=3.535$
+		- $\alpha_{4}=-8.820\times 10^{-1}$
+		- $\alpha_{5}=1.025\times 10^{-1}$
+		- $\alpha_{6}=-4.550\times 10^{-3}$
+	- $k=Pu_{241}$:
+		- $\alpha_{1}=3.251$
+		- $\alpha_{2}=-3.204$
+		- $\alpha_{3}=1.428$
+		- $\alpha_{4}=-3.675 \times 10^{-1}$
+		- $\alpha_{5}=4.254\times 10^{-2}$
+		- $\alpha_{6}=-1.896 \times 10^{-3}$
+- From [Phys.Rev.D 39 (1989) 3378, Table I] From 2 MeV to 8 MeV
+	- $\frac{dN_{\nu}}{dE_{\nu}} = \exp(a_{0}+a_{1}E_{\nu}+a_{2}E_{\nu}^{2})$
+	- When applied to energy from 8 MeV to 12 MeV, the spectra are overestimated by a factor of 2 - 3
+	- U235
+		- $a_{0}=0.870$
+		- $a_{1}=-0.160$
+		- $a_{2}=-0.0910$
+	- U238
+		- $a_{0}=0.976$
+		- $a_{1}=-0.162$
+		- $a_{2}=-0.0790$
+	- Pu239
+		- $a_{0}=0.896$
+		- $a_{1}=-0.239$
+		- $a_{2}=-0.0981$
+	- Pu241
+		- $a_{0}=0.793$
+		- $a_{1}=-0.080$
+		- $a_{2}=-0.1085$
+- From [arXiv: 1106.0687, Table III], just for reference, does not have result for U238, cannot be used
+	- $\frac{dN_{\nu}}{dE_{\nu}}=\exp\left( \sum_{i=1}^{6}\alpha_{i}E_{\nu}^{i-1} \right)$
+	- U235:
+		- $\alpha_{1}=4.367$
+		- $\alpha_{2}=-4.577$
+		- $\alpha_{3}=2.100$
+		- $\alpha_{4}=-5.294\times 10^{-1}$
+		- $\alpha_{5}=6.186\times 10^{-2}$
+		- $\alpha_{6}=-2.777\times 10^{-3}$
+	- Pu239:
+		- $\alpha_{1}=4.757$
+		- $\alpha_{2}=-5.392$
+		- $\alpha_{3}=2.563$
+		- $\alpha_{4}=-6.596\times 10^{-1}$
+		- $\alpha_{5}=7.820\times 10^{-2}$
+		- $\alpha_{6}=-3.536\times 10^{-3}$
+	- Pu241:
+		- $\alpha_{1}=2.990$
+		- $\alpha_{2}=-2.882$
+		- $\alpha_{3}=1.278$
+		- $\alpha_{4}=-3.343\times 10^{-1}$
+		- $\alpha_{5}=3.905\times 10^{-2}$
+		- $\alpha_{6}=-1.754\times 10^{-3}$
+
+
+
+
+
+Instead of using the above fitting formula, we can also use data table from references (here, I just list the table number, for detailed data, please check the references)
+- From [arXiv: 1101.2663, TABLE III, IV, V], from 2 MeV to 8 MeV
+- From [Phys.Rev.D 39 (1989) 3378, Table II] Below 2 MeV
+- From [arXiv: 2305.14992, Supplementary materials], from 0 to 12.5 MeV
+- From [https://inspirehep.net/literature/2890702, pp 81-82]
