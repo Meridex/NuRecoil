@@ -2,9 +2,15 @@
 
 from nurecoil.flux.base import FluxBase
 from nurecoil.flux.phenomenological import PhenomenologicalFlux
-from nurecoil.flux.interpolated import InterpolatedFlux
+from nurecoil.flux.interpolated import InterpolatedFlux, IsotopeInterpolatedFlux
 
 #: Short alias for :class:`PhenomenologicalFlux`.
 PhenoFlux = PhenomenologicalFlux
 
-__all__ = ["FluxBase", "PhenomenologicalFlux", "PhenoFlux", "InterpolatedFlux"]
+__all__ = [
+    "FluxBase",
+    "PhenomenologicalFlux",
+    "PhenoFlux",
+    "InterpolatedFlux",
+    "IsotopeInterpolatedFlux",
+]

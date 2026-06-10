@@ -11,7 +11,7 @@ from nurecoil.flux.phenomenological import (
     ENERGY_PER_FISSION_MA_2013,
     FISSION_FRACTIONS_TYPICAL,
 )
-from nurecoil.flux.interpolated import InterpolatedFlux
+from nurecoil.flux.interpolated import InterpolatedFlux, IsotopeInterpolatedFlux
 from nurecoil.flux import PhenoFlux
 
 
@@ -155,3 +155,114 @@ class TestInterpolatedFlux:
     def test_invalid_table_unsorted(self):
         with pytest.raises(ValueError, match="strictly increasing"):
             InterpolatedFlux([3.0, 1.0, 2.0], [1.0, 1.0, 1.0])
+
+
+# ---------------------------------------------------------------------------
+# Helpers shared by IsotopeInterpolatedFlux tests
+# ---------------------------------------------------------------------------
+
+def _flat_spectra(isotopes=("U235", "U238", "Pu239", "Pu241"), E_lo=2.0, E_hi=8.0, val=1.0):
+    """Return a spectra dict with flat unit spectra for the given isotopes."""
+    E = np.linspace(E_lo, E_hi, 100)
+    S = np.full_like(E, val)
+    return {iso: (E.copy(), S.copy()) for iso in isotopes}
+
+
+class TestIsotopeInterpolatedFlux:
+    def setup_method(self):
+        self.spectra = _flat_spectra()
+        self.flux = IsotopeInterpolatedFlux(self.spectra)
+
+    # --- basic sanity ---
+
+    def test_positive_inside_range(self):
+        phi = self.flux(np.array([3.0, 5.0]), P, L)
+        assert np.all(phi > 0)
+
+    def test_zero_outside_range(self):
+        phi = self.flux(np.array([0.5, 9.0]), P, L)
+        assert np.all(phi == 0.0)
+
+    def test_scales_with_power(self):
+        phi1 = self.flux(np.array([4.0]), 1.0, L)
+        phi2 = self.flux(np.array([4.0]), 2.0, L)
+        assert np.isclose(phi2 / phi1, 2.0, rtol=1e-6)
+
+    def test_scales_with_distance(self):
+        phi1 = self.flux(np.array([4.0]), P, 10.0)
+        phi2 = self.flux(np.array([4.0]), P, 20.0)
+        assert np.isclose(phi2 / phi1, 0.25, rtol=1e-6)
+
+    # --- fission fraction presets ---
+
+    @pytest.mark.parametrize("preset", ["typical", "ksnps", "conus", "daya_bay"])
+    def test_all_presets(self, preset):
+        f = IsotopeInterpolatedFlux(self.spectra, fission_fractions=preset)
+        phi = f(np.array([4.0]), P, L)
+        assert phi[0] > 0
+
+    def test_custom_fission_fractions(self):
+        fracs = {"U235": 0.6, "U238": 0.1, "Pu239": 0.2, "Pu241": 0.1}
+        f = IsotopeInterpolatedFlux(self.spectra, fission_fractions=fracs)
+        phi = f(np.array([4.0]), P, L)
+        assert phi[0] > 0
+
+    # --- energy per fission presets ---
+
+    @pytest.mark.parametrize("epf", ["ma_2013", "bemporad_2002", "meulenberg_1969"])
+    def test_all_epf_models(self, epf):
+        f = IsotopeInterpolatedFlux(self.spectra, energy_per_fission=epf)
+        phi = f(np.array([4.0]), P, L)
+        assert phi[0] > 0
+
+    # --- partial isotope set ---
+
+    def test_subset_of_isotopes(self):
+        # Only U235 and Pu239 provided, zero U238/Pu241 fraction
+        spectra = _flat_spectra(("U235", "Pu239"))
+        fracs = {"U235": 0.6, "U238": 0.0, "Pu239": 0.4, "Pu241": 0.0}
+        f = IsotopeInterpolatedFlux(spectra, fission_fractions=fracs)
+        phi = f(np.array([4.0]), P, L)
+        assert phi[0] > 0
+
+    # --- E_min / E_max union ---
+
+    def test_energy_range_is_union(self):
+        spectra = {
+            "U235":  (np.linspace(1.0, 6.0, 50), np.ones(50)),
+            "Pu239": (np.linspace(2.0, 8.0, 50), np.ones(50)),
+        }
+        fracs = {"U235": 0.6, "U238": 0.0, "Pu239": 0.4, "Pu241": 0.0}
+        f = IsotopeInterpolatedFlux(spectra, fission_fractions=fracs)
+        assert f.E_min == pytest.approx(1.0)
+        assert f.E_max == pytest.approx(8.0)
+
+    # --- error paths ---
+
+    def test_invalid_isotope_key(self):
+        bad = {"Xe135": (np.linspace(2, 8, 10), np.ones(10))}
+        with pytest.raises(ValueError, match="Unknown actinide"):
+            IsotopeInterpolatedFlux(bad)
+
+    def test_empty_spectra(self):
+        with pytest.raises(ValueError, match="at least one"):
+            IsotopeInterpolatedFlux({})
+
+    def test_fractions_not_sum_to_one(self):
+        fracs = {"U235": 0.5, "U238": 0.1, "Pu239": 0.1, "Pu241": 0.1}
+        with pytest.raises(ValueError, match="sum to 1"):
+            IsotopeInterpolatedFlux(self.spectra, fission_fractions=fracs)
+
+    def test_invalid_fraction_preset(self):
+        with pytest.raises(ValueError, match="Unknown fission fraction preset"):
+            IsotopeInterpolatedFlux(self.spectra, fission_fractions="nonexistent")
+
+    def test_invalid_epf_preset(self):
+        with pytest.raises(ValueError, match="Unknown energy-per-fission model"):
+            IsotopeInterpolatedFlux(self.spectra, energy_per_fission="nonexistent")
+
+    def test_unsorted_table(self):
+        bad = {"U235": ([3.0, 1.0, 2.0], [1.0, 1.0, 1.0])}
+        fracs = {"U235": 1.0, "U238": 0.0, "Pu239": 0.0, "Pu241": 0.0}
+        with pytest.raises(ValueError, match="strictly increasing"):
+            IsotopeInterpolatedFlux(bad, fission_fractions=fracs)
