@@ -1,0 +1,3 @@
+# Source: Estienne et al., Phys.Rev.Lett. 123 (2019) 022502, Supplementary materials, 0.0–10.0 MeV
+# Units: E_nu [MeV], dN_dE [# / MeV / fission]
+E_nu,dN_dE

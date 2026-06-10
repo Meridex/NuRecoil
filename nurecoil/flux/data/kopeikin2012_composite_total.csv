@@ -1,0 +1,3 @@
+# Source: Kopeikin et al., Physics of Atomic Nuclei 75 (2012) 2, 143, Table 3, 0.01–9 MeV, total spectrum
+# Units: E_nu [MeV], dN_dE [# / MeV / fission]
+E_nu,dN_dE

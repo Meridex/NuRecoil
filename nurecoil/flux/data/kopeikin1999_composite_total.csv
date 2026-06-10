@@ -1,0 +1,3 @@
+# Source: Kopeikin et al., arXiv:hep-ph/9904384, Fig.1, 0–1.5 MeV (digitized from figure), total spectrum
+# Units: E_nu [MeV], dN_dE [# / MeV / fission]
+E_nu,dN_dE

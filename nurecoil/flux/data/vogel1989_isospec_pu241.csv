@@ -1,0 +1,3 @@
+# Source: Vogel et al., Phys.Rev.D 39 (1989) 3378, Table II, below 2 MeV
+# Units: E_nu [MeV], dN_dE [# / MeV / fission]
+E_nu,dN_dE

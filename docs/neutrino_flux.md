@@ -57,6 +57,7 @@ Another quantity we need to implement is the effective thermal energy released p
 	- U238: $205.99\pm 0.52\, \rm MeV / fission$
 	- Pu239: $211.12\pm 0.34\, \rm MeV / fission$
 	- Pu241: $214.26\pm 0.33\,\rm MeV / fission$
+- 
 
 
 The neutrino spectrum per fission for different actinides
@@ -139,7 +140,10 @@ The neutrino spectrum per fission for different actinides
 
 
 Instead of using the above fitting formula, we can also use data table from references (here, I just list the table number, for detailed data, please check the references)
-- From [arXiv: 1101.2663, TABLE III, IV, V], from 2 MeV to 8 MeV
-- From [Phys.Rev.D 39 (1989) 3378, Table II] Below 2 MeV
-- From [arXiv: 2305.14992, Supplementary materials], from 0 to 12.5 MeV
-- From [https://inspirehep.net/literature/2890702, pp 81-82]
+- From [arXiv: 1101.2663, TABLE III, IV, V], mueller2011, from 2 MeV to 8 MeV, for U235, U238, Pu239, Pu241 respectively
+- From [Phys.Rev.D 39 (1989) 3378, Table II], vogel1989, Below 2 MeV, for U235, U238, Pu239, Pu241 respectively
+- From [arXiv: 2304.14992, Supplementary materials], CEA2023, from 0 to 12.5 MeV, for U235, U238, Pu239, Pu241 respectively
+- From [Phys.Rev.Lett. 123 (2019) 022502, Supplementary materials], estienne2019, from 0.0 to 10.0 MeV, for U235, U238, Pu239, Pu241 respectively
+- From [arXiv: hep-ph/9904384, Fig.1], kopeikin1999 from 0 to 1.5 MeV, total spectrum
+- From [Physics of Atomic Nuclei 75 (2012) 2, 143, Table 3], kopeikin2012, from 0.01 MeV to 9 MeV, total spectrum
+- From [https://inspirehep.net/literature/2890702, pp 81-82] not used, coved by above list

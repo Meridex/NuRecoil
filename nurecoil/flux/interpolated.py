@@ -23,10 +23,10 @@ from nurecoil.flux.base import FluxBase
 
 
 class InterpolatedFlux(FluxBase):
-    """
+    r"""
     Antineutrino flux built from a user-supplied discrete spectrum table.
 
-    The table gives the *normalised* spectrum per fission S(E_ν) in
+    The table gives the *normalised* spectrum per fission S(E_\nu) in
     units of  **# / MeV / fission**.  The class then applies the
     power-to-fission-rate and geometric 1/L² factors at call time.
 
@@ -35,7 +35,7 @@ class InterpolatedFlux(FluxBase):
     E_nu_table : array-like, shape (n,)
         Neutrino energy grid [MeV].  Must be strictly increasing.
     spectrum_table : array-like, shape (n,)
-        dN/dE_ν per fission  [# / MeV / fission].
+        dN/dE_\nu per fission  [# / MeV / fission].
     extrapolate : bool
         If True, allow extrapolation outside the table range
         (the spline will extrapolate naturally).  If False (default),
@@ -65,8 +65,8 @@ class InterpolatedFlux(FluxBase):
         self._extrapolate = extrapolate
 
     def _flux(self, E_nu: NDArray, P: float, L: float) -> NDArray:
-        """
-        Evaluate dΦ/dE_ν [# / MeV / cm²] for in-range energies.
+        r"""
+        Evaluate d\Phi/dE_\nu [# / MeV / cm^2] for in-range energies.
 
         Parameters
         ----------
