@@ -1,21 +1,21 @@
-"""
+r"""
 Interpolated antineutrino flux from user-supplied tabulated data.
 
 Units (API boundary)
 --------------------
     E_nu : MeV
-    P    : GW   → converted to fissions/s on entry
-    L    : m    → converted to cm on entry
+    P    : GW    converted to fissions/s on entry
+    L    : m     converted to cm on entry
 
 Units (internal / output)
 --------------------------
-    dΦ/dE_ν : # / MeV / cm²
+    d\Phi/dE_\nu : # / MeV / cm²
 """
 
 from __future__ import annotations
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike, NDArray  # ArrayLike kept for CubicSpline input annotation
 from scipy.interpolate import CubicSpline
 
 from nurecoil import constants
@@ -42,6 +42,10 @@ class InterpolatedFlux(FluxBase):
         the flux is zero outside the table range.
     """
 
+    # Placeholders; overwritten in __init__ with actual table bounds.
+    E_min: float = 0.0
+    E_max: float = 0.0
+
     def __init__(
         self,
         E_nu_table: ArrayLike,
@@ -56,36 +60,30 @@ class InterpolatedFlux(FluxBase):
             raise ValueError("E_nu_table must be strictly increasing.")
 
         self._spline      = CubicSpline(E_arr, S_arr, extrapolate=extrapolate)
-        self._E_min       = float(E_arr[0])
-        self._E_max       = float(E_arr[-1])
+        self.E_min        = float(E_arr[0])
+        self.E_max        = float(E_arr[-1])
         self._extrapolate = extrapolate
 
-    def __call__(self, E_nu: ArrayLike, P: float, L: float) -> NDArray:
+    def _flux(self, E_nu: NDArray, P: float, L: float) -> NDArray:
         """
-        Evaluate dΦ/dE_ν [# / MeV / cm²].
+        Evaluate dΦ/dE_ν [# / MeV / cm²] for in-range energies.
 
         Parameters
         ----------
-        E_nu : array-like
-            Neutrino energies [MeV].
+        E_nu : NDArray
+            Neutrino energies [MeV], guaranteed within [E_min, E_max].
         P : float
             Reactor thermal power [GW].
         L : float
             Baseline distance [m].
         """
-        E_nu_arr = np.asarray(E_nu, dtype=float)
-
         # --- API boundary: convert P [GW] → fissions/s and L [m] → cm ---
         L_cm         = L * constants.cm_per_m
         fission_rate = P * constants.GW_to_MeV_per_s / constants.MeV_per_fission
 
-        spectrum = self._spline(E_nu_arr)  # # / MeV / fission
+        spectrum = self._spline(E_nu)  # # / MeV / fission
 
-        if not self._extrapolate:
-            outside = (E_nu_arr < self._E_min) | (E_nu_arr > self._E_max)
-            spectrum = np.where(outside, 0.0, spectrum)
-
-        # Clip to non-negative (spline can overshoot)
+        # Clip to non-negative (spline can overshoot near table boundaries)
         spectrum = np.maximum(spectrum, 0.0)
 
         return fission_rate * spectrum / (4.0 * np.pi * L_cm ** 2)

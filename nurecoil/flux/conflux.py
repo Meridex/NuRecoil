@@ -4,7 +4,8 @@ CONFLUX library wrapper — optional flux backend.
 
 from __future__ import annotations
 
-from numpy.typing import ArrayLike, NDArray
+import numpy as np
+from numpy.typing import NDArray
 
 from nurecoil.flux.base import FluxBase
 
@@ -15,7 +16,13 @@ class ConfluxFlux(FluxBase):
 
     Raises ``ImportError`` with a helpful message if CONFLUX is not installed.
     Install with:  pip install nurecoil[conflux]
+
+    ``E_min`` and ``E_max`` are set to 0 and infinity as placeholders;
+    update them once the CONFLUX integration is implemented.
     """
+
+    E_min: float = 0.0          # MeV — placeholder; update when implemented
+    E_max: float = float("inf") # MeV — placeholder; update when implemented
 
     def __init__(self, *args, **kwargs) -> None:
         try:
@@ -28,8 +35,8 @@ class ConfluxFlux(FluxBase):
         self._args   = args
         self._kwargs = kwargs
 
-    def __call__(self, E_nu: ArrayLike, P: float, L: float) -> NDArray:
+    def _flux(self, E_nu: NDArray, P: float, L: float) -> NDArray:
         raise NotImplementedError(
-            "ConfluxFlux.__call__ is not yet implemented. "
+            "ConfluxFlux._flux is not yet implemented. "
             "Contribute at https://github.com/your-org/nurecoil"
         )
