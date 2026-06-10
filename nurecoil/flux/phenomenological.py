@@ -155,9 +155,9 @@ FISSION_FRACTION_PRESETS: dict[str, dict[str, float]] = {
 
 # Valid energy range (MeV) for each named spectrum model
 _SPECTRUM_ENERGY_RANGE: dict[str, tuple[float, float]] = {
-    "huber_mueller":      (1.8, 8.0),
+    "huber_mueller":      (2.0, 8.0),
     "mueller_2011":       (2.0, 8.0),
-    "huber_2011":         (1.8, 8.0),
+    "huber_2011":         (2.0, 8.0),
     "schreckenbach_1985": (2.0, 8.0),
 }
 

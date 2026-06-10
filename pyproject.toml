@@ -28,3 +28,20 @@ include = ["nurecoil*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.jupytext]
+# All notebooks in examples/ are paired with a percent-format .py file.
+# Only the .py files are tracked by git; .ipynb files are in .gitignore.
+#
+# To add a new example notebook:
+#   1. Create the .py file (with # %% cell markers) in examples/, OR
+#      create a new .ipynb and run:
+#        jupytext --set-formats "ipynb,py:percent" examples/<name>.ipynb
+#   2. Work in the .ipynb locally (run cells, view plots, etc.).
+#      Jupytext keeps the .py in sync automatically on each save.
+#   3. Commit only the .py file:
+#        git add examples/<name>.py
+#        git commit -m "..."
+#   4. To restore the .ipynb on another machine:
+#        jupytext --sync examples/<name>.py
+formats = "ipynb,py:percent"
