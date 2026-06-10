@@ -5,9 +5,11 @@ import pytest
 from nurecoil.flux.phenomenological import (
     PhenomenologicalFlux,
     SPECTRUM_MODELS,
+    SPECTRUM_HUBER_MUELLER,
+)
+from nurecoil.flux.reactor_mix import (
     ENERGY_PER_FISSION_MODELS,
     FISSION_FRACTION_PRESETS,
-    SPECTRUM_HUBER_MUELLER,
     ENERGY_PER_FISSION_MA_2013,
     FISSION_FRACTIONS_TYPICAL,
 )
@@ -209,7 +211,7 @@ class TestIsotopeInterpolatedFlux:
 
     # --- energy per fission presets ---
 
-    @pytest.mark.parametrize("epf", ["ma_2013", "bemporad_2002", "meulenberg_1969"])
+    @pytest.mark.parametrize("epf", list(ENERGY_PER_FISSION_MODELS))
     def test_all_epf_models(self, epf):
         f = IsotopeInterpolatedFlux(self.spectra, energy_per_fission=epf)
         phi = f(np.array([4.0]), P, L)

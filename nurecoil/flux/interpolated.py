@@ -22,10 +22,7 @@ from scipy.interpolate import CubicSpline
 
 from nurecoil import constants
 from nurecoil.flux.base import FluxBase
-from nurecoil.flux.phenomenological import (
-    FISSION_FRACTION_PRESETS,
-    ENERGY_PER_FISSION_MODELS,
-)
+from nurecoil.flux.reactor_mix import ReactorMix
 
 
 class InterpolatedFlux(FluxBase):
@@ -34,7 +31,7 @@ class InterpolatedFlux(FluxBase):
 
     The table gives the *normalised* spectrum per fission S(E_\nu) in
     units of  **# / MeV / fission**.  The class then applies the
-    power-to-fission-rate and geometric 1/L² factors at call time.
+    power-to-fission-rate and geometric 1/L^2 factors at call time.
 
     Parameters
     ----------
@@ -163,30 +160,11 @@ class IsotopeInterpolatedFlux(FluxBase):
         if not spectra:
             raise ValueError("spectra must contain at least one actinide.")
 
-        # --- resolve fission fractions ---
-        if fission_fractions is None:
-            fission_fractions = "typical"
-        if isinstance(fission_fractions, str):
-            if fission_fractions not in FISSION_FRACTION_PRESETS:
-                raise ValueError(
-                    f"Unknown fission fraction preset '{fission_fractions}'. "
-                    f"Choose from: {list(FISSION_FRACTION_PRESETS)}"
-                )
-            fission_fractions = dict(FISSION_FRACTION_PRESETS[fission_fractions])
-        total = sum(fission_fractions.values())
-        if not np.isclose(total, 1.0, atol=1e-3):
-            raise ValueError(
-                f"Fission fractions must sum to 1, got {total:.4f}."
-            )
-
-        # --- resolve energy per fission ---
-        if isinstance(energy_per_fission, str):
-            if energy_per_fission not in ENERGY_PER_FISSION_MODELS:
-                raise ValueError(
-                    f"Unknown energy-per-fission model '{energy_per_fission}'. "
-                    f"Choose from: {list(ENERGY_PER_FISSION_MODELS)}"
-                )
-            energy_per_fission = dict(ENERGY_PER_FISSION_MODELS[energy_per_fission])
+        # --- resolve fission fractions and energy per fission via ReactorMix ---
+        mix = ReactorMix(
+            fission_fractions=fission_fractions,
+            energy_per_fission=energy_per_fission,
+        )
 
         # --- build per-actinide splines and determine energy range ---
         self._splines: dict[str, CubicSpline] = {}
@@ -214,16 +192,8 @@ class IsotopeInterpolatedFlux(FluxBase):
         self.E_min = e_min_global
         self.E_max = e_max_global
         self._extrapolate = extrapolate
-
-        # --- pre-compute weighted average energy per fission ---
-        self._fission_fractions = fission_fractions
-        self._e_bar = sum(
-            fission_fractions.get(iso, 0.0) * energy_per_fission[iso]
-            for iso in known
-            if iso in energy_per_fission
-        )
-        if self._e_bar <= 0:
-            raise ValueError("Weighted average energy per fission is zero or negative.")
+        self._fission_fractions = mix.fractions
+        self._e_bar = mix.e_bar
 
     def _flux(self, E_nu: NDArray, P: float, L: float) -> NDArray:
         r"""Evaluate d\Phi/dE_\nu [# / MeV / cm^2] for in-range energies."""

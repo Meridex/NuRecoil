@@ -26,6 +26,7 @@ from numpy.typing import NDArray
 
 from nurecoil import constants
 from nurecoil.flux.base import FluxBase
+from nurecoil.flux.reactor_mix import ReactorMix
 
 # ---------------------------------------------------------------------------
 # Neutrino spectrum coefficients  dN_k/dE_nu = exp(sum_p alpha_p * E_nu^(p-1))
@@ -40,10 +41,10 @@ SPECTRUM_MUELLER_2011: dict[str, list[float]] = {
     "Pu241": [ 3.251, -3.204,  1.428, -3.675e-1,  4.254e-2, -1.896e-3],
 }
 
-# Schreckenbach et al. 1985 [Phys.Rev.D 39 (1989) 3378, Table I]  —  valid 2–8 MeV
+# Vogel et al. 1985 [Phys.Rev.D 39 (1989) 3378, Table I]  —  valid 2–8 MeV
 # Simple quadratic exponent: dN/dE = exp(a0 + a1*E + a2*E^2)
 # Note: overestimates by factor 2–3 for E > 8 MeV.
-SPECTRUM_SCHRECKENBACH_1985: dict[str, list[float]] = {
+SPECTRUM_VOGEL_1985: dict[str, list[float]] = {
     "U235":  [0.870, -0.160,  -0.0910],
     "U238":  [0.976, -0.162,  -0.0790],
     "Pu239": [0.896, -0.239,  -0.0981],
@@ -67,90 +68,14 @@ SPECTRUM_HUBER_MUELLER: dict[str, list[float]] = {
 }
 
 # ---------------------------------------------------------------------------
-# Effective thermal energy per fission e_i  [MeV / fission]
-# ---------------------------------------------------------------------------
-
-# Meulenberg 1969  [Journal of Nuclear Energy 23 (1969) 517, Table A.2]
-ENERGY_PER_FISSION_MEULENBERG_1969: dict[str, float] = {
-    "U235":  201.7,
-    "U238":  205.0,
-    "Pu239": 210.0,
-    "Pu241": 212.4,
-}
-
-# Bemporad et al. 2002  [arXiv:hep-ph/0410100, Table 4]
-ENERGY_PER_FISSION_BEMPORAD_2002: dict[str, float] = {
-    "U235":  201.92,
-    "U238":  205.52,
-    "Pu239": 209.99,
-    "Pu241": 213.60,
-}
-
-# Ma et al. 2013  [Phys. Rev. C 88 (2013) 014605, Table IX]
-ENERGY_PER_FISSION_MA_2013: dict[str, float] = {
-    "U235":  202.36,
-    "U238":  205.99,
-    "Pu239": 211.12,
-    "Pu241": 214.26,
-}
-
-# ---------------------------------------------------------------------------
-# Fission fractions  f_i / F
-# ---------------------------------------------------------------------------
-
-# Kuo-Sheng Nuclear Power Station  [arXiv:2402.06416]
-FISSION_FRACTIONS_KSNPS: dict[str, float] = {
-    "U235":  0.55,
-    "U238":  0.07,
-    "Pu239": 0.32,
-    "Pu241": 0.06,
-}
-
-# CONUS  [arXiv:2401.07684]
-FISSION_FRACTIONS_CONUS: dict[str, float] = {
-    "U235":  0.491,
-    "U238":  0.074,
-    "Pu239": 0.361,
-    "Pu241": 0.074,
-}
-
-# Typical commercial reactor (PWR equilibrium)  [arXiv:2310.113070]
-FISSION_FRACTIONS_TYPICAL: dict[str, float] = {
-    "U235":  0.58,
-    "U238":  0.08,
-    "Pu239": 0.29,
-    "Pu241": 0.05,
-}
-
-# Daya Bay  [arXiv:2210.01068]
-FISSION_FRACTIONS_DAYA_BAY: dict[str, float] = {
-    "U235":  0.564,
-    "U238":  0.076,
-    "Pu239": 0.304,
-    "Pu241": 0.056,
-}
-
-# ---------------------------------------------------------------------------
 # Convenience name maps exposed for user selection
 # ---------------------------------------------------------------------------
+
 SPECTRUM_MODELS: dict[str, dict[str, list[float]]] = {
     "huber_mueller":      SPECTRUM_HUBER_MUELLER,
     "mueller_2011":       SPECTRUM_MUELLER_2011,
     "huber_2011":         SPECTRUM_HUBER_2011,
-    "schreckenbach_1985": SPECTRUM_SCHRECKENBACH_1985,
-}
-
-ENERGY_PER_FISSION_MODELS: dict[str, dict[str, float]] = {
-    "ma_2013":         ENERGY_PER_FISSION_MA_2013,
-    "bemporad_2002":   ENERGY_PER_FISSION_BEMPORAD_2002,
-    "meulenberg_1969": ENERGY_PER_FISSION_MEULENBERG_1969,
-}
-
-FISSION_FRACTION_PRESETS: dict[str, dict[str, float]] = {
-    "typical":  FISSION_FRACTIONS_TYPICAL,
-    "ksnps":    FISSION_FRACTIONS_KSNPS,
-    "conus":    FISSION_FRACTIONS_CONUS,
-    "daya_bay": FISSION_FRACTIONS_DAYA_BAY,
+    "vogel_1985":         SPECTRUM_VOGEL_1985,
 }
 
 # Valid energy range (MeV) for each named spectrum model
@@ -158,7 +83,7 @@ _SPECTRUM_ENERGY_RANGE: dict[str, tuple[float, float]] = {
     "huber_mueller":      (2.0, 8.0),
     "mueller_2011":       (2.0, 8.0),
     "huber_2011":         (2.0, 8.0),
-    "schreckenbach_1985": (2.0, 8.0),
+    "vogel_1985":         (2.0, 8.0),
 }
 
 
@@ -194,10 +119,10 @@ class PhenomenologicalFlux(FluxBase):
     spectrum_model : dict[str, list[float]] | str
         Polynomial coefficients per isotope, or a model name:
         ``"huber_mueller"`` (default), ``"mueller_2011"``,
-        ``"huber_2011"``, ``"schreckenbach_1985"``.
+        ``"huber_2011"``, ``"vogel_1985"``.
     energy_per_fission : dict[str, float] | str
         Effective thermal energy per fission [MeV] per isotope, or a model name:
-        ``"ma_2013"`` (default), ``"bemporad_2002"``, ``"meulenberg_1969"``.
+        ``"ma_2013"`` (default), ``"kopeikin_2004"``, ``"james_1969"``.
 
     Notes
     -----
@@ -215,21 +140,11 @@ class PhenomenologicalFlux(FluxBase):
         spectrum_model: dict[str, list[float]] | str = "huber_mueller",
         energy_per_fission: dict[str, float] | str = "ma_2013",
     ) -> None:
-        # --- resolve fission fractions ---
-        if fission_fractions is None:
-            fission_fractions = "typical"
-        if isinstance(fission_fractions, str):
-            if fission_fractions not in FISSION_FRACTION_PRESETS:
-                raise ValueError(
-                    f"Unknown fission fraction preset '{fission_fractions}'. "
-                    f"Choose from: {list(FISSION_FRACTION_PRESETS)}"
-                )
-            fission_fractions = dict(FISSION_FRACTION_PRESETS[fission_fractions])
-        total = sum(fission_fractions.values())
-        if not np.isclose(total, 1.0, atol=1e-3):
-            raise ValueError(
-                f"Fission fractions must sum to 1, got {total:.4f}."
-            )
+        # --- resolve fission fractions and energy per fission via ReactorMix ---
+        mix = ReactorMix(
+            fission_fractions=fission_fractions,
+            energy_per_fission=energy_per_fission,
+        )
 
         # --- resolve spectrum model ---
         if isinstance(spectrum_model, str):
@@ -245,32 +160,16 @@ class PhenomenologicalFlux(FluxBase):
             spectrum_coeffs = spectrum_model
 
         # Guard: huber_2011 lacks U238
-        if "U238" not in spectrum_coeffs and fission_fractions.get("U238", 0.0) > 0:
+        if "U238" not in spectrum_coeffs and mix.fractions.get("U238", 0.0) > 0:
             raise ValueError(
                 "The chosen spectrum model does not include U238, but the "
-                f"U238 fission fraction is {fission_fractions['U238']:.3f}. "
+                f"U238 fission fraction is {mix.fractions['U238']:.3f}. "
                 "Use 'huber_mueller' or 'mueller_2011', or set U238 fraction to 0."
             )
 
-        # --- resolve energy per fission ---
-        if isinstance(energy_per_fission, str):
-            if energy_per_fission not in ENERGY_PER_FISSION_MODELS:
-                raise ValueError(
-                    f"Unknown energy-per-fission model '{energy_per_fission}'. "
-                    f"Choose from: {list(ENERGY_PER_FISSION_MODELS)}"
-                )
-            energy_per_fission = ENERGY_PER_FISSION_MODELS[energy_per_fission]
-
-        self._fractions       = fission_fractions
+        self._fractions       = mix.fractions
         self._spectrum_coeffs = spectrum_coeffs
-        self._e_per_fission   = energy_per_fission
-
-        # e_bar = \sum_i (f_i/F) * e_i  [MeV / fission]
-        self._e_bar: float = sum(
-            frac * self._e_per_fission[iso]
-            for iso, frac in self._fractions.items()
-            if iso in self._e_per_fission
-        )
+        self._e_bar: float    = mix.e_bar
 
     def _spectrum_per_fission(self, E_nu: NDArray) -> NDArray:
         r"""Weighted spectrum \sum_i (f_i/F) S_i(E_\nu)  [# / MeV / fission]."""

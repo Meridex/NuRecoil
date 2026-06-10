@@ -1,6 +1,7 @@
 """nurecoil.flux — Neutrino flux module."""
 
 from nurecoil.flux.base import FluxBase
+from nurecoil.flux.reactor_mix import ReactorMix
 from nurecoil.flux.phenomenological import PhenomenologicalFlux
 from nurecoil.flux.interpolated import InterpolatedFlux, IsotopeInterpolatedFlux
 
@@ -9,6 +10,7 @@ PhenoFlux = PhenomenologicalFlux
 
 __all__ = [
     "FluxBase",
+    "ReactorMix",
     "PhenomenologicalFlux",
     "PhenoFlux",
     "InterpolatedFlux",
