@@ -57,7 +57,7 @@ Another quantity we need to implement is the effective thermal energy released p
 	- U238: $205.99\pm 0.52\, \rm MeV / fission$
 	- Pu239: $211.12\pm 0.34\, \rm MeV / fission$
 	- Pu241: $214.26\pm 0.33\,\rm MeV / fission$
-- 
+-
 
 
 The neutrino spectrum per fission for different actinides
@@ -147,3 +147,8 @@ Instead of using the above fitting formula, we can also use data table from refe
 - From [arXiv: hep-ph/9904384, Fig.1], kopeikin1999 from 0 to 1.5 MeV, total spectrum
 - From [Physics of Atomic Nuclei 75 (2012) 2, 143, Table 3], kopeikin2012, from 0.01 MeV to 9 MeV, total spectrum
 - From [https://inspirehep.net/literature/2890702, pp 81-82] not used, coved by above list
+
+
+## Todo
+
+- [ ] Add the neutrino flux calculation using CONFLUX
