@@ -218,6 +218,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+.DS_Store
+
 misc
+
 
 .obsidian/
