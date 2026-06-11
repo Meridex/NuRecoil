@@ -503,3 +503,90 @@ class TestIsotopeSpectrum:
     def test_isotope_flux_unknown_raises(self):
         with pytest.raises(ValueError, match="not in this instance"):
             self.flux.isotope_flux("Xe135", self.E, P=1.0, L=500.0)
+
+
+# ---------------------------------------------------------------------------
+# TestPhenoVsInterpolated — cross-class consistency checks
+# ---------------------------------------------------------------------------
+
+class TestPhenoVsInterpolated:
+    """
+    Sanity checks comparing PhenomenologicalFlux and IsotopeInterpolatedFlux.
+
+    Both classes share the same fission-fraction weighting and e_bar
+    bookkeeping.  Their absolute values differ (different spectral models),
+    but they must agree on basic physical properties.
+    """
+
+    # Common evaluation grid — within the valid range of all models
+    E = np.linspace(2.5, 7.5, 200)
+    P = 1.0   # GW
+    L = 10.0  # m
+
+    def setup_method(self):
+        from nurecoil.flux.phenomenological import SPECTRUM_MODELS
+        self.pheno_models = list(SPECTRUM_MODELS)
+        self.isospec_sources = [s for s in list_sources() if list_isotopes(s)]
+
+    # --- both classes produce positive flux on the shared grid ---------------
+
+    @pytest.mark.parametrize("model", ["huber_mueller", "mueller_2011", "vogel_1985"])
+    def test_pheno_positive_on_shared_grid(self, model):
+        from nurecoil.flux import PhenomenologicalFlux
+        flux = PhenomenologicalFlux(spectrum_model=model)
+        phi = flux(self.E, self.P, self.L)
+        assert np.all(phi > 0)
+
+    @pytest.mark.parametrize("source", ["estienne2019", "mueller2011", "CEA2023"])
+    def test_interp_positive_on_shared_grid(self, source):
+        flux = make_flux(source)
+        phi = flux(self.E, self.P, self.L)
+        assert np.all(phi > 0)
+
+    # --- same fission fractions → same e_bar → same normalisation factor -----
+
+    def test_same_ebar_same_preset(self):
+        """Both classes built with the same preset must have equal e_bar."""
+        from nurecoil.flux import PhenomenologicalFlux
+        pheno = PhenomenologicalFlux(fission_fractions="typical")
+        interp = make_flux("estienne2019", fission_fractions="typical")
+        assert pheno._e_bar == pytest.approx(interp._e_bar, rel=1e-10)
+
+    @pytest.mark.parametrize("preset", ["typical", "ksnps", "conus", "daya_bay"])
+    def test_ebar_consistent_across_presets(self, preset):
+        """e_bar must match between pheno and interpolated for every preset."""
+        from nurecoil.flux import PhenomenologicalFlux
+        pheno  = PhenomenologicalFlux(fission_fractions=preset)
+        interp = make_flux("estienne2019", fission_fractions=preset)
+        assert pheno._e_bar == pytest.approx(interp._e_bar, rel=1e-10)
+
+    # --- ratio between pheno and interpolated is within physically plausible range
+
+    @pytest.mark.parametrize("model", ["huber_mueller", "mueller_2011"])
+    @pytest.mark.parametrize("source", ["estienne2019", "mueller2011"])
+    def test_ratio_within_factor_of_two(self, model, source):
+        """Pheno / interpolated ratio should stay within [0.5, 2.0] on 2.5–7.5 MeV."""
+        from nurecoil.flux import PhenomenologicalFlux
+        pheno  = PhenomenologicalFlux(spectrum_model=model)
+        interp = make_flux(source)
+        phi_p = pheno(self.E, self.P, self.L)
+        phi_i = interp(self.E, self.P, self.L)
+        ratio = phi_p / np.where(phi_i > 0, phi_i, np.nan)
+        assert np.nanmin(ratio) > 0.5
+        assert np.nanmax(ratio) < 2.0
+
+    # --- changing preset shifts both classes in the same direction -----------
+
+    def test_preset_shift_direction_consistent(self):
+        """
+        Switching from 'typical' to 'daya_bay' should change e_bar by the same
+        amount in both pheno and interpolated (they share ReactorMix).
+        """
+        from nurecoil.flux import PhenomenologicalFlux
+        p_typ = PhenomenologicalFlux(fission_fractions="typical")
+        p_db  = PhenomenologicalFlux(fission_fractions="daya_bay")
+        i_typ = make_flux("estienne2019", fission_fractions="typical")
+        i_db  = make_flux("estienne2019", fission_fractions="daya_bay")
+        assert (p_db._e_bar - p_typ._e_bar) == pytest.approx(
+            i_db._e_bar - i_typ._e_bar, rel=1e-10
+        )
