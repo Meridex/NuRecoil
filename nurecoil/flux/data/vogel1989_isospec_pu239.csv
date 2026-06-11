@@ -1,3 +1,14 @@
 # Source: Vogel et al., Phys.Rev.D 39 (1989) 3378, Table II, below 2 MeV
 # Units: E_nu [MeV], dN_dE [# / MeV / fission]
 E_nu,dN_dE
+7.813e-3,0.14
+1.563e-2,0.56
+3.12e-2,2.13
+6.25e-2,0.64
+0.125,1.99
+0.25,2.08
+0.50,2.63
+0.75,2.58
+1.0,2.32
+1.5,1.48
+2.0,1.08
