@@ -2,6 +2,13 @@
 
 import numpy as np
 import pytest
+from nurecoil.flux.data_loader import (
+    load_spectrum,
+    load_all_isotopes,
+    list_sources,
+    list_isotopes,
+)
+from nurecoil.flux.interpolated import make_flux
 from nurecoil.flux.phenomenological import (
     PhenomenologicalFlux,
     SPECTRUM_MODELS,
@@ -268,3 +275,231 @@ class TestIsotopeInterpolatedFlux:
         fracs = {"U235": 1.0, "U238": 0.0, "Pu239": 0.0, "Pu241": 0.0}
         with pytest.raises(ValueError, match="strictly increasing"):
             IsotopeInterpolatedFlux(bad, fission_fractions=fracs)
+
+
+# ---------------------------------------------------------------------------
+# TestDataLoader — unit tests for nurecoil.flux.data_loader
+# ---------------------------------------------------------------------------
+
+ISOSPEC_SOURCES = ["estienne2019", "mueller2011", "CEA2023", "vogel1989"]
+COMPOSITE_SOURCES = ["kopeikin2012", "kopeikin1999"]
+ALL_ISOTOPES = ["U235", "U238", "Pu239", "Pu241"]
+
+
+class TestDataLoader:
+    # --- list_sources / list_isotopes ---
+
+    def test_list_sources_returns_list(self):
+        sources = list_sources()
+        assert isinstance(sources, list)
+        assert len(sources) > 0
+
+    def test_list_sources_contains_known(self):
+        sources = list_sources()
+        for s in ISOSPEC_SOURCES + COMPOSITE_SOURCES:
+            assert s in sources, f"Expected source '{s}' in list_sources()"
+
+    def test_list_isotopes_isospec(self):
+        isos = list_isotopes("estienne2019")
+        assert set(isos) == {"U235", "U238", "Pu239", "Pu241"}
+
+    def test_list_isotopes_composite_returns_empty(self):
+        isos = list_isotopes("kopeikin2012")
+        assert isos == []
+
+    # --- load_spectrum: isospec ---
+
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES)
+    @pytest.mark.parametrize("isotope", ALL_ISOTOPES)
+    def test_load_spectrum_isospec_shape(self, source, isotope):
+        E, S = load_spectrum(source, isotope)
+        assert E.ndim == 1 and S.ndim == 1
+        assert len(E) == len(S)
+        assert len(E) > 1
+
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES)
+    @pytest.mark.parametrize("isotope", ALL_ISOTOPES)
+    def test_load_spectrum_isospec_strictly_increasing(self, source, isotope):
+        E, _ = load_spectrum(source, isotope)
+        assert np.all(np.diff(E) > 0)
+
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES)
+    @pytest.mark.parametrize("isotope", ALL_ISOTOPES)
+    def test_load_spectrum_isospec_positive(self, source, isotope):
+        _, S = load_spectrum(source, isotope)
+        assert np.all(S >= 0)
+
+    # --- load_spectrum: isotope name aliases ---
+
+    @pytest.mark.parametrize("alias", ["u235", "U235", "u-235", "U-235"])
+    def test_load_spectrum_isotope_aliases(self, alias):
+        E1, S1 = load_spectrum("estienne2019", "u235")
+        E2, S2 = load_spectrum("estienne2019", alias)
+        np.testing.assert_array_equal(E1, E2)
+        np.testing.assert_array_equal(S1, S2)
+
+    # --- load_spectrum: composite ---
+
+    @pytest.mark.parametrize("source", COMPOSITE_SOURCES)
+    def test_load_spectrum_composite(self, source):
+        E, S = load_spectrum(source)
+        assert E.ndim == 1 and S.ndim == 1
+        assert len(E) > 1
+        assert np.all(np.diff(E) > 0)
+        assert np.all(S >= 0)
+
+    # --- load_spectrum: error paths ---
+
+    def test_load_spectrum_unknown_isotope(self):
+        with pytest.raises(ValueError, match="Unknown isotope"):
+            load_spectrum("estienne2019", "Xe135")
+
+    def test_load_spectrum_unknown_source(self):
+        with pytest.raises(ValueError):
+            load_spectrum("nonexistent_source", "U235")
+
+    def test_load_spectrum_composite_missing(self):
+        # estienne2019 has no composite file
+        with pytest.raises(ValueError, match="No composite file"):
+            load_spectrum("estienne2019")
+
+    # --- load_all_isotopes ---
+
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES)
+    def test_load_all_isotopes_keys(self, source):
+        spectra = load_all_isotopes(source)
+        assert set(spectra.keys()) == {"U235", "U238", "Pu239", "Pu241"}
+
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES)
+    def test_load_all_isotopes_shapes(self, source):
+        spectra = load_all_isotopes(source)
+        for iso, (E, S) in spectra.items():
+            assert len(E) == len(S), f"{source}/{iso}: length mismatch"
+            assert np.all(np.diff(E) > 0), f"{source}/{iso}: not strictly increasing"
+
+    def test_load_all_isotopes_unknown_source(self):
+        with pytest.raises(ValueError, match="No isospec files found"):
+            load_all_isotopes("nonexistent_source")
+
+
+# ---------------------------------------------------------------------------
+# TestFromSource — integration tests for from_source classmethods
+# ---------------------------------------------------------------------------
+
+class TestFromSource:
+    # --- InterpolatedFlux.from_composite ---
+
+    @pytest.mark.parametrize("source", COMPOSITE_SOURCES)
+    def test_interpolated_from_composite(self, source):
+        from nurecoil.flux.interpolated import InterpolatedFlux
+        flux = InterpolatedFlux.from_composite(source)
+        E_mid = (flux.E_min + flux.E_max) / 2.0
+        phi = flux(np.array([E_mid]), P=1.0, L=500.0)
+        assert phi[0] > 0
+
+    # --- IsotopeInterpolatedFlux.from_source ---
+
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES)
+    def test_isotope_interpolated_from_source(self, source):
+        from nurecoil.flux.interpolated import IsotopeInterpolatedFlux
+        flux = IsotopeInterpolatedFlux.from_source(source)
+        E_mid = (flux.E_min + flux.E_max) / 2.0
+        phi = flux(np.array([E_mid]), P=1.0, L=500.0)
+        assert phi[0] > 0
+
+    @pytest.mark.parametrize("preset", ["typical", "ksnps", "conus", "daya_bay"])
+    def test_isotope_from_source_presets(self, preset):
+        from nurecoil.flux.interpolated import IsotopeInterpolatedFlux
+        flux = IsotopeInterpolatedFlux.from_source("estienne2019", fission_fractions=preset)
+        E_mid = (flux.E_min + flux.E_max) / 2.0
+        phi = flux(np.array([E_mid]), P=1.0, L=500.0)
+        assert phi[0] > 0
+
+    def test_isotope_from_source_unknown(self):
+        from nurecoil.flux.interpolated import IsotopeInterpolatedFlux
+        with pytest.raises(ValueError):
+            IsotopeInterpolatedFlux.from_source("nonexistent")
+
+
+# ---------------------------------------------------------------------------
+# TestMakeFlux — unified constructor
+# ---------------------------------------------------------------------------
+
+class TestMakeFlux:
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES)
+    def test_isospec_returns_isotope_class(self, source):
+        from nurecoil.flux.interpolated import IsotopeInterpolatedFlux
+        flux = make_flux(source)
+        assert isinstance(flux, IsotopeInterpolatedFlux)
+
+    @pytest.mark.parametrize("source", COMPOSITE_SOURCES)
+    def test_composite_returns_interpolated_class(self, source):
+        from nurecoil.flux.interpolated import InterpolatedFlux
+        flux = make_flux(source)
+        assert isinstance(flux, InterpolatedFlux)
+
+    @pytest.mark.parametrize("source", ISOSPEC_SOURCES + COMPOSITE_SOURCES)
+    def test_make_flux_produces_positive_output(self, source):
+        flux = make_flux(source)
+        E_mid = np.array([(flux.E_min + flux.E_max) / 2.0])
+        phi = flux(E_mid, P=1.0, L=500.0)
+        assert phi[0] > 0
+
+    def test_make_flux_fission_fraction_preset(self):
+        flux = make_flux("estienne2019", fission_fractions="daya_bay")
+        E_mid = np.array([4.0])
+        phi = flux(E_mid, P=1.0, L=500.0)
+        assert phi[0] > 0
+
+    def test_make_flux_unknown_source_raises(self):
+        with pytest.raises(ValueError):
+            make_flux("nonexistent")
+
+
+# ---------------------------------------------------------------------------
+# TestIsotopeSpectrum — per-isotope access on IsotopeInterpolatedFlux
+# ---------------------------------------------------------------------------
+
+class TestIsotopeSpectrum:
+    def setup_method(self):
+        self.flux = IsotopeInterpolatedFlux.from_source("estienne2019")
+        self.E = np.linspace(2.0, 8.0, 100)
+
+    def test_isotopes_property(self):
+        assert set(self.flux.isotopes) == {"U235", "U238", "Pu239", "Pu241"}
+
+    @pytest.mark.parametrize("iso", ["U235", "U238", "Pu239", "Pu241"])
+    def test_isotope_spectrum_positive(self, iso):
+        S = self.flux.isotope_spectrum(iso, self.E)
+        assert np.all(S >= 0)
+        assert np.any(S > 0)
+
+    @pytest.mark.parametrize("iso", ["U235", "U238", "Pu239", "Pu241"])
+    def test_isotope_spectrum_zero_outside_range(self, iso):
+        e_lo, e_hi = self.flux._e_ranges[iso]
+        E_out = np.array([e_lo - 1.0, e_hi + 1.0])
+        S = self.flux.isotope_spectrum(iso, E_out)
+        assert np.all(S == 0.0)
+
+    def test_isotope_spectrum_unknown_raises(self):
+        with pytest.raises(ValueError, match="not in this instance"):
+            self.flux.isotope_spectrum("Xe135", self.E)
+
+    @pytest.mark.parametrize("iso", ["U235", "U238", "Pu239", "Pu241"])
+    def test_isotope_flux_positive(self, iso):
+        phi_iso = self.flux.isotope_flux(iso, self.E, P=1.0, L=500.0)
+        assert np.all(phi_iso >= 0)
+        assert np.any(phi_iso > 0)
+
+    def test_isotope_flux_sums_to_total(self):
+        # Sum of per-isotope fluxes should equal the total flux
+        phi_total = self.flux(self.E, P=1.0, L=500.0)
+        phi_sum = sum(
+            self.flux.isotope_flux(iso, self.E, P=1.0, L=500.0)
+            for iso in self.flux.isotopes
+        )
+        np.testing.assert_allclose(phi_sum, phi_total, rtol=1e-10)
+
+    def test_isotope_flux_unknown_raises(self):
+        with pytest.raises(ValueError, match="not in this instance"):
+            self.flux.isotope_flux("Xe135", self.E, P=1.0, L=500.0)
