@@ -19,7 +19,24 @@ The cross-section formula is
     \\left|Q_W\\!\\left(|\\vec{q}|\\right)\\right|^2
 
 where $|\\vec{q}| \\approx \\sqrt{2 M E_R}$ [MeV] and
-$Q_W = g_V^n N F_N + g_V^p Z F_Z$.
+$Q_W = g_V^n N F + g_V^p Z F$ (same form factor for n and p).
+
+Convention note
+---------------
+This uses the $G_F^2 M / \\pi$ prefactor convention, where the factor of 4
+relative to the $G_F^2 M / 4\\pi$ convention is absorbed into $Q_W$.
+The two conventions are equivalent:
+    $Q_w^{(4\\pi)} = Z(1 - 4s_W^2) - N  \\Leftrightarrow  2 Q_W^{(\\pi)}$.
+
+Flavor / radiative corrections
+-------------------------------
+``flavor="tree"`` (default): tree-level SM couplings
+    $g_V^n = -0.5$,  $g_V^p = 0.5 - 2 s_W^2$
+
+``flavor="nu_e" | "nu_mu" | "nu_tau"``: include radiative corrections
+    $g_V^n = -0.5117$
+    $g_V^p$: 0.0382 (nu_e), 0.0300 (nu_mu), 0.0256 (nu_tau)
+    Sources: arXiv:2411.03122; Eur. Phys. J. C 83(7):683 (2023).
 
 Unit conversion from natural units ($\\mathrm{MeV}^{-2}$) to $\\mathrm{cm}^2$:
 
@@ -32,10 +49,12 @@ Unit conversion from natural units ($\\mathrm{MeV}^{-2}$) to $\\mathrm{cm}^2$:
 
 References
 ----------
-Freedman 1974; Drukier & Stodolsky 1984; Barranco et al. 2005.
+Freedman 1974; Barranco et al. 2005; arXiv:2203.07361; arXiv:2411.03122.
 """
 
 from __future__ import annotations
+
+from typing import Literal
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -44,6 +63,17 @@ from nurecoil import constants
 from nurecoil.nucleus import Nucleus
 from nurecoil.cross_section.base import CrossSectionBase
 from nurecoil.cross_section.form_factors import FormFactorBase, HelmFormFactor
+
+# Radiative-corrected proton vector couplings per neutrino flavor
+# (arXiv:2411.03122; Eur. Phys. J. C 83(7):683 (2023))
+_G_V_P_RC: dict[str, float] = {
+    "nu_e":   0.0382,
+    "nu_mu":  0.0300,
+    "nu_tau": 0.0256,
+}
+_G_V_N_RC: float = -0.5117  # same for all flavors
+
+FlavorRC = Literal["tree", "nu_e", "nu_mu", "nu_tau"]
 
 
 class SMCEvNS(CrossSectionBase):
@@ -57,24 +87,36 @@ class SMCEvNS(CrossSectionBase):
     form_factor : FormFactorBase, optional
         Nuclear form factor applied to both neutron and proton distributions.
         Defaults to ``HelmFormFactor()``.
+    flavor : {"tree", "nu_e", "nu_mu", "nu_tau"}, optional
+        Neutrino flavor used to select vector couplings.  ``"tree"`` (default)
+        uses SM tree-level values; the flavor strings include radiative
+        corrections from arXiv:2411.03122.
     """
 
     def __init__(
         self,
         nucleus: Nucleus,
         form_factor: FormFactorBase | None = None,
+        flavor: FlavorRC = "tree",
     ) -> None:
         super().__init__(nucleus)
         self.form_factor: FormFactorBase = (
             form_factor if form_factor is not None else HelmFormFactor()
         )
+        self.flavor = flavor
 
-        # Vector couplings (SM tree-level)
-        # $g_V^p = T_3 - 2Q\sin^2\theta_W = +1/2 - 2(+1)\sin^2\theta_W$
-        # $g_V^n = T_3 - 2Q\sin^2\theta_W = -1/2 - 2(0)\sin^2\theta_W = -1/2$
-        s2w = constants.sin2_theta_W
-        self._g_V_p: float =  0.5 - 2.0 * s2w
-        self._g_V_n: float = -0.5
+        if flavor == "tree":
+            # SM tree-level: g_V^p = 1/2 - 2 sin²θ_W,  g_V^n = -1/2
+            s2w = constants.sin2_theta_W
+            self._g_V_p: float =  0.5 - 2.0 * s2w
+            self._g_V_n: float = -0.5
+        elif flavor in _G_V_P_RC:
+            self._g_V_p = _G_V_P_RC[flavor]
+            self._g_V_n = _G_V_N_RC
+        else:
+            raise ValueError(
+                f"Unknown flavor {flavor!r}. Choose from 'tree', 'nu_e', 'nu_mu', 'nu_tau'."
+            )
 
         # Unit conversion: MeV^{-2} -> cm^2
         # $\sigma\ [\mathrm{cm}^2] = \sigma\ [\mathrm{MeV}^{-2}] \times (\hbar c)^2 \times (\mathrm{cm/fm})^2$

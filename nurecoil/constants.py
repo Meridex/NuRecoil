@@ -32,7 +32,10 @@ G_F: float      = 1.1663788e-11  # MeV^{-2}  -- use this in all cross-section fo
 # ---------------------------------------------------------------------------
 # Electroweak mixing
 # ---------------------------------------------------------------------------
-sin2_theta_W: float = 0.23122  # $\sin^2\theta_W$, MS-bar scheme at $M_Z$ (PDG 2024)
+# Low-q² (on-shell / running) value used in CEvNS and EvES cross-section formulas.
+# Sources: arXiv:2411.03122; Phys. Rev. D 110 (2024) 030001.
+# Note: the MS-bar value at M_Z is 0.23122 (PDG 2024) — do NOT use that here.
+sin2_theta_W: float = 0.23868  # $\sin^2\theta_W$ at $q^2 \to 0$
 
 # ---------------------------------------------------------------------------
 # Natural unit bridge
@@ -58,6 +61,11 @@ cm_per_m: float   = 1.0e2    # 1 m  = 100 cm    (baseline $L$: m -> cm at API bo
 # Atomic mass unit
 # ---------------------------------------------------------------------------
 u_to_MeV: float = 931.494    # 1 u = 931.494 MeV/$c^2$  (CODATA 2018)
+
+# ---------------------------------------------------------------------------
+# Electron mass
+# ---------------------------------------------------------------------------
+m_e: float = 0.51099895  # MeV/$c^2$  (CODATA 2018; PDG 2024)
 # Nuclear mass approximation: $M \approx A \times u\_to\_MeV$  (< 0.1 % error for A > 10)
 
 # ---------------------------------------------------------------------------

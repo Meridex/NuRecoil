@@ -7,6 +7,7 @@ from nurecoil.cross_section.form_factors import (
     GaussianFormFactor,
 )
 from nurecoil.cross_section.sm_cevns import SMCEvNS
+from nurecoil.cross_section.sm_eves import SMEvES
 
 __all__ = [
     "CrossSectionBase",
@@ -14,4 +15,5 @@ __all__ = [
     "HelmFormFactor",
     "GaussianFormFactor",
     "SMCEvNS",
+    "SMEvES",
 ]
