@@ -29,6 +29,39 @@ class TestLindhardQuenching:
         fq = self.q(E_R, self.ge)
         assert np.all(np.diff(fq) > 0)
 
+    def test_default_k_semi_empirical(self):
+        # Default k = 0.133 * Z^(2/3) * A^(-1/2)
+        # Note: doc quotes k~0.157 for Ge using natural-abundance A~72.6;
+        # Ge76 (A=76) gives k~0.1538. Both are in the expected range.
+        q = LindhardQuenching()
+        expected_k = 0.133 * 32 ** (2.0 / 3.0) * 76 ** (-0.5)
+        assert expected_k == pytest.approx(0.1538, abs=0.001)
+        # k=None should give same result as passing the computed k explicitly
+        q_explicit = LindhardQuenching(k=expected_k)
+        E_R = np.array([0.001, 0.01, 0.05])
+        np.testing.assert_allclose(q(E_R, self.ge), q_explicit(E_R, self.ge), rtol=1e-9)
+
+    def test_custom_k_changes_output(self):
+        # Bonhomme et al. 2022: k=0.162 for Ge
+        q_default = LindhardQuenching()
+        q_bonhomme = LindhardQuenching(k=0.162)
+        E_R = np.array([0.005, 0.01, 0.05])
+        fq_default  = q_default(E_R, self.ge)
+        fq_bonhomme = q_bonhomme(E_R, self.ge)
+        # k=0.162 > 0.157 (default for Ge76) -> higher quenching
+        assert np.all(fq_bonhomme > fq_default)
+
+    def test_analytic_value_at_1keV(self):
+        # Manual calculation at E_R = 1 keV = 1e-3 MeV for Ge76
+        E_R_keV = 1.0
+        Z, A = 32, 76
+        epsilon = 11.5 * E_R_keV * Z ** (-7.0 / 3.0)
+        g = 3.0 * epsilon ** 0.15 + 0.7 * epsilon ** 0.6 + epsilon
+        k = 0.133 * Z ** (2.0 / 3.0) * A ** (-0.5)
+        expected = k * g / (1.0 + k * g)
+        fq = LindhardQuenching()(np.array([1e-3]), self.ge)
+        assert fq[0] == pytest.approx(expected, rel=1e-9)
+
 
 class TestConstantQuenching:
     def test_default_unity(self):

@@ -54,14 +54,27 @@ class LindhardQuenching(QuenchingBase):
 
         \\varepsilon &= 11.5 \\cdot (E_R / \\mathrm{keV}) \\cdot Z^{-7/3} \\\\\\
         g &= 3\\varepsilon^{0.15} + 0.7\\varepsilon^{0.6} + \\varepsilon \\\\\\
-        \\kappa &= 0.133 \\cdot Z^{2/3} \\cdot A^{-1/2} \\\\\\
-        f_Q &= \\kappa g \\;/\\; (1 + \\kappa g)
+        k &= 0.133 \\cdot Z^{2/3} \\cdot A^{-1/2}
+             \\quad (\\text{semi-empirical default, overridable}) \\\\\\
+        f_Q &= k g \\;/\\; (1 + k g)
 
     Valid for $E_R \\gtrsim$ a few eV; returns $f_Q = 0$ below ``E_R_threshold_MeV``.
+
+    Parameters
+    ----------
+    k : float or None, optional
+        Lindhard $k$ parameter (dimensionless).  If ``None`` (default), the
+        semi-empirical formula $k = 0.133 Z^{2/3} A^{-1/2}$ is used and
+        evaluated per call from the nucleus.  Pass an explicit value to use
+        a fit result from calibration data (e.g. ``k=0.162`` for Ge from
+        Bonhomme et al. 2022, or ``k=0.1789`` from Scholz et al. 2016).
     """
 
     #: Minimum recoil energy below which f_Q is set to zero [MeV]
     E_R_threshold_MeV: float = 1.0e-6  # 1 eV
+
+    def __init__(self, k: float | None = None) -> None:
+        self.k = k
 
     def __call__(self, E_R: ArrayLike, nucleus: Nucleus) -> NDArray:
         E_R_arr = np.asarray(E_R, dtype=float)
@@ -70,9 +83,11 @@ class LindhardQuenching(QuenchingBase):
         # Convert MeV -> keV for the Lindhard formula
         E_R_keV = E_R_arr * constants.keV_per_MeV
 
-        epsilon = 11.5 * E_R_keV * Z ** (-7.0 / 3.0)  # dimensionless: epsilon
+        epsilon = 11.5 * E_R_keV * Z ** (-7.0 / 3.0)
         g       = 3.0 * epsilon ** 0.15 + 0.7 * epsilon ** 0.6 + epsilon
-        kappa   = 0.133 * Z ** (2.0 / 3.0) * A ** (-0.5)  # kappa
+
+        # k: use user-supplied value or Lindhard semi-empirical formula
+        kappa = self.k if self.k is not None else 0.133 * Z ** (2.0 / 3.0) * A ** (-0.5)
 
         kg  = kappa * g
         f_Q = kg / (1.0 + kg)
