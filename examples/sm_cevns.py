@@ -46,12 +46,15 @@ plt.rcParams.update({"figure.dpi": 120, "font.size": 11})
 # ## 2. Physical Constants
 #
 # Values from `nurecoil.constants` (PDG 2024). All internal energies are in **MeV**.
+#
+# Note: `sin2_theta_W` is the low-$q^2$ running value $\approx 0.23868$,
+# appropriate for CEvNS kinematics (not the MS-bar value at $M_Z$).
 
 # %%
 print(f"G_F          = {C.G_F:.7e}  MeV⁻²")
 print(f"G_F_GeV2     = {C.G_F_GeV2:.7e}  GeV⁻²  (PDG reference)")
 print(f"ℏc           = {C.hbar_c:.7f}  MeV·fm")
-print(f"sin²θ_W      = {C.sin2_theta_W}")
+print(f"sin²θ_W      = {C.sin2_theta_W}  (low-q² running value)")
 print(f"u_to_MeV     = {C.u_to_MeV}  MeV")
 print(f"cm_per_fm    = {C.cm_per_fm:.1e}")
 print(f"keV_per_MeV  = {C.keV_per_MeV:.0f}")
@@ -59,32 +62,36 @@ print(f"keV_per_MeV  = {C.keV_per_MeV:.0f}")
 # %% [markdown]
 # ## 3. Weak Mixing Angle and Couplings
 #
-# SM tree-level vector couplings:
+# SM tree-level vector couplings (low-$q^2$):
 #
 # $$
 # g_V^p = \frac{1}{2} - 2\sin^2\!\theta_W, \qquad g_V^n = -\frac{1}{2}
 # $$
 #
+# With radiative corrections (arXiv:2411.03122):
+#
+# $$
+# g_V^n = -0.5117, \qquad g_V^p = \begin{cases}
+# 0.0382 & \nu_e \\ 0.0300 & \nu_\mu \\ 0.0256 & \nu_\tau
+# \end{cases}
+# $$
+#
 # The weak charge including nuclear form factors is:
 #
 # $$
-# Q_W\!\left(|\vec{q}|\right) = g_V^n\, N\, F_N\!\left(|\vec{q}|\right)
-#                              + g_V^p\, Z\, F_Z\!\left(|\vec{q}|\right)
-# $$
-#
-# In the $|\vec{q}| \to 0$ (low-momentum-transfer) limit, $F_{N,Z} \to 1$, so:
-#
-# $$
-# Q_W \approx g_V^n N + g_V^p Z
-# = -\frac{N}{2} + \left(\frac{1}{2} - 2\sin^2\!\theta_W\right) Z
+# Q_W\!\left(|\vec{q}|\right) = g_V^n\, N\, F\!\left(|\vec{q}|\right)
+#                              + g_V^p\, Z\, F\!\left(|\vec{q}|\right)
 # $$
 
 # %%
 s2w   = C.sin2_theta_W
-g_V_p = 0.5 - 2.0 * s2w   # proton weak vector coupling
-g_V_n = -0.5               # neutron weak vector coupling
+g_V_p = 0.5 - 2.0 * s2w   # proton weak vector coupling (tree-level)
+g_V_n = -0.5               # neutron weak vector coupling (tree-level)
 
-# Show Q_W (q→0 limit) for a few nuclei
+# Radiative-corrected values
+g_V_p_rc = {"nu_e": 0.0382, "nu_mu": 0.0300, "nu_tau": 0.0256}
+g_V_n_rc = -0.5117
+
 targets = {
     "Ge76":  Nucleus(Z=32, A=76),
     "Si28":  Nucleus(Z=14, A=28),
@@ -93,11 +100,13 @@ targets = {
     "Ar40":  Nucleus(Z=18, A=40),
 }
 
-print(f"{'Nucleus':<8}  {'Z':>4}  {'N':>4}  {'Q_W(q→0)':>10}")
-print("-" * 36)
+print(f"{'Nucleus':<8}  {'Z':>4}  {'N':>4}  {'Q_W tree':>10}  {'Q_W ν_e RC':>12}  {'Q_W ν_μ RC':>12}")
+print("-" * 58)
 for name, nuc in targets.items():
-    Q_W0 = g_V_n * nuc.N + g_V_p * nuc.Z
-    print(f"{name:<8}  {nuc.Z:>4}  {nuc.N:>4}  {Q_W0:>10.3f}")
+    Q_tree = g_V_n * nuc.N + g_V_p * nuc.Z
+    Q_nue  = g_V_n_rc * nuc.N + g_V_p_rc["nu_e"]  * nuc.Z
+    Q_numu = g_V_n_rc * nuc.N + g_V_p_rc["nu_mu"] * nuc.Z
+    print(f"{name:<8}  {nuc.Z:>4}  {nuc.N:>4}  {Q_tree:>10.3f}  {Q_nue:>12.3f}  {Q_numu:>12.3f}")
 
 # %% [markdown]
 # ## 4. CEvNS Differential Cross Section
@@ -141,9 +150,61 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
+# %% [markdown]
+# ## 5. Effect of Radiative Corrections and Neutrino Flavor
+#
+# The `flavor` parameter selects between tree-level couplings (`"tree"`) and
+# radiatively corrected couplings (`"nu_e"`, `"nu_mu"`, `"nu_tau"`).
+# The difference is a few percent in the total cross section.
+
+# %%
+flavors = {
+    "tree":   ("Tree-level",  "royalblue",  "-"),
+    "nu_e":   (r"$\nu_e$ RC", "tomato",     "--"),
+    "nu_mu":  (r"$\nu_\mu$ RC","seagreen",  "-."),
+    "nu_tau": (r"$\nu_\tau$ RC","darkorange",":" ),
+}
+
+E_nu_plot = 5.0   # MeV
+E_R_max_ref = SMCEvNS(ge76).E_R_max(E_nu_plot)
+E_R = np.linspace(0.0, E_R_max_ref * 0.999, 400)
+
+fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+
+# Left: absolute dσ/dE_R
+ax = axes[0]
+for flavor, (label, col, ls) in flavors.items():
+    xs = SMCEvNS(ge76, HelmFormFactor(), flavor=flavor)
+    ax.plot(E_R * C.keV_per_MeV, xs(E_nu_plot, E_R),
+            color=col, ls=ls, lw=2, label=label)
+ax.set_xlabel("$E_R$ [keV]")
+ax.set_ylabel(r"$d\sigma/dE_R\, {\rm [cm^{2} / MeV]}$")
+ax.set_title(f"$^{{76}}$Ge, $E_\\nu = {E_nu_plot}$ MeV")
+ax.set_yscale("log")
+ax.legend(fontsize=9)
+ax.grid(True, alpha=0.3)
+
+# Right: ratio to tree-level
+ax = axes[1]
+xs_tree_vals = SMCEvNS(ge76, HelmFormFactor(), flavor="tree")(E_nu_plot, E_R)
+for flavor, (label, col, ls) in flavors.items():
+    if flavor == "tree":
+        continue
+    xs = SMCEvNS(ge76, HelmFormFactor(), flavor=flavor)
+    ratio = xs(E_nu_plot, E_R) / np.where(xs_tree_vals > 0, xs_tree_vals, np.nan)
+    ax.plot(E_R * C.keV_per_MeV, ratio, color=col, ls=ls, lw=2, label=label)
+ax.axhline(1.0, color="royalblue", ls="-", lw=1.5, label="Tree-level")
+ax.set_xlabel("$E_R$ [keV]")
+ax.set_ylabel("Ratio to tree-level")
+ax.set_title("Radiative Correction Effect")
+ax.legend(fontsize=9)
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
-# ## 5. Total Cross Section via $E_R$ Integration
+# ## 6. Total Cross Section via $E_R$ Integration
 #
 # $$
 # \sigma(E_\nu) = \int_0^{E_R^{\max}} \frac{d\sigma}{dE_R}\, dE_R,
@@ -177,10 +238,10 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-print(fr"$\sigma(E_\nu=5\,{{\rm MeV}}) \approx {np.interp(5.0, E_nu_grid, sigma_ge76):.3e}\, \rm cm^{2}$")
+print(fr"σ(E_ν=5 MeV) ≈ {np.interp(5.0, E_nu_grid, sigma_ge76):.3e} cm²")
 
 # %% [markdown]
-# ## 6. CEvNS Event Rate for Different Target Nuclei
+# ## 7. CEvNS Event Rate for Different Target Nuclei
 #
 # Convolve the reactor antineutrino flux (Huber–Mueller parametrisation) with the
 # SM CEvNS cross section; integrate over the full phase space to get the rate per
@@ -231,7 +292,7 @@ for name, nuc in targets.items():
 print("Done.")
 
 # %% [markdown]
-# ## 7. Visualisation: Differential and Total Cross Sections
+# ## 8. Visualisation: Differential and Total Cross Sections
 #
 # Compare the differential cross-section shape for Ge, Si, and Xe at fixed
 # $E_\nu = 5\ \text{MeV}$, and the total cross section $\sigma(E_\nu)$.
@@ -280,7 +341,7 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ## 8. Event-Rate Comparison Across Target Nuclei
+# ## 9. Event-Rate Comparison Across Target Nuclei
 #
 # The CEvNS cross section scales approximately as $N^2$ (coherent neutron contribution).
 # The plots below visualise the rate for each nucleus and verify the $\sigma \propto Q_W^2$
@@ -324,3 +385,4 @@ ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.show()
+
