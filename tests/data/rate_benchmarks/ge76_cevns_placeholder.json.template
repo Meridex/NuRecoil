@@ -1,0 +1,37 @@
+{
+  "name": "replace_with_external_ge76_cevns_reference",
+  "observable": "cevns",
+  "target": {"Z": 32, "A": 76},
+  "normalization": {
+    "target_mass_g": 1000.0,
+    "P_GW": 3.0,
+    "L_m": 30.0,
+    "exposure_s": null
+  },
+  "flux": {
+    "model": "phenomenological",
+    "fission_fractions": "typical",
+    "spectrum_model": "huber_mueller",
+    "energy_per_fission": "ma_2013"
+  },
+  "cross_section": {
+    "model": "sm_cevns",
+    "flavor": "tree",
+    "form_factor": "helm"
+  },
+  "detector": {
+    "resolution": {"model": "cdex"},
+    "quenching": {"model": "lindhard", "k": null}
+  },
+  "integration": {
+    "E_nu_range_MeV": [1.8, 8.0]
+  },
+  "reference": {
+    "unit": "counts_per_s_per_bin",
+    "rtol": 0.02,
+    "atol": 0.0,
+    "bins": [
+      {"low_MeV": 0.0, "high_MeV": 0.00005, "value": 0.0}
+    ]
+  }
+}
