@@ -61,6 +61,7 @@ cm_per_m: float   = 1.0e2    # 1 m  = 100 cm    (baseline $L$: m -> cm at API bo
 # Atomic mass unit
 # ---------------------------------------------------------------------------
 u_to_MeV: float = 931.494    # 1 u = 931.494 MeV/$c^2$  (CODATA 2018)
+N_A: float = 6.02214076e23  # Avogadro constant [mol^{-1}]  (exact SI definition)
 
 # ---------------------------------------------------------------------------
 # Electron mass
