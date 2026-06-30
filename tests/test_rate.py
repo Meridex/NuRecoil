@@ -8,7 +8,7 @@ from nurecoil.cross_section.base import CrossSectionBase
 from nurecoil.cross_section.sm_cevns import SMCEvNS
 from nurecoil.cross_section.sm_eves import SMEvES
 from nurecoil.detector.quenching import ConstantQuenching, LindhardQuenching
-from nurecoil.detector.resolution import ConstantResolution
+from nurecoil.detector.resolution import CDEXResolution, ConstantResolution
 from nurecoil.flux.base import FluxBase
 from nurecoil.nucleus import Nucleus
 from nurecoil.rate import (
@@ -116,6 +116,25 @@ def test_binned_spectrum_exposure_scales_counts():
     two_seconds = compute_binned_spectrum(bin_edges, N_T=2.0, exposure_s=2.0, **inputs)
 
     np.testing.assert_allclose(two_seconds, 2.0 * one_second, rtol=1e-10, atol=0.0)
+
+
+def test_binned_spectrum_integrates_narrow_resolution_peak_into_bins():
+    inputs = {
+        "flux": ConstantFlux(value=1.0),
+        "cross_section": ConstantCrossSection(GE76, value=1.0, recoil_max=8.0),
+        "quenching": ConstantQuenching(1.0),
+        "resolution": CDEXResolution(),
+        "nucleus": GE76,
+        "N_T": 1.0,
+        "P": 1.0,
+        "L": 1.0,
+        "E_nu_range": (2.0, 2.1),
+    }
+    bin_edges = np.linspace(0.0, 1.0, 11)
+
+    spectrum = compute_binned_spectrum(bin_edges, samples_per_bin=3, **inputs)
+
+    assert spectrum.sum() == pytest.approx(0.1, rel=3e-3)
 
 
 def test_cevns_wrapper_defaults_to_lindhard_quenching_and_accepts_target_mass():

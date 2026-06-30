@@ -20,7 +20,8 @@ from __future__ import annotations
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from scipy.integrate import dblquad
+from scipy.integrate import dblquad, quad
+from scipy.special import erf
 
 from nurecoil import constants
 from nurecoil.flux.base import FluxBase
@@ -218,8 +219,9 @@ def compute_binned_spectrum(
         If provided, multiply rates by exposure time [s] and return counts/bin.
         If omitted, return counts/s/bin.
     samples_per_bin : int
-        Number of detected-energy samples used for trapezoid integration in
-        each bin. Must be at least 2.
+        Deprecated compatibility parameter. Bin integration is analytic in
+        detected energy for Gaussian resolution, so this value is only
+        validated and otherwise ignored.
     """
     edges = _validate_bin_edges(bin_edges)
     if samples_per_bin < 2:
@@ -229,20 +231,39 @@ def compute_binned_spectrum(
 
     result = np.zeros(edges.size - 1, dtype=float)
     for idx, (left, right) in enumerate(zip(edges[:-1], edges[1:])):
-        E_det_grid = np.linspace(left, right, int(samples_per_bin))
-        d_rate = compute_differential_rate(
-            E_det_grid,
-            flux,
-            cross_section,
-            quenching,
-            resolution,
-            nucleus,
-            N_T,
-            P,
-            L,
-            E_nu_range=E_nu_range,
+        sqrt2 = np.sqrt(2.0)
+
+        def integrand(E_R: float, E_nu: float) -> float:
+            phi = float(flux(E_nu, P, L))
+            dsig = float(cross_section(E_nu, E_R))
+            fq = float(quenching(E_R, nucleus))
+            E_ee = fq * E_R
+            sigma = float(resolution.sigma([E_ee])[0])
+            bin_prob = 0.5 * (
+                erf((right - E_ee) / (sqrt2 * sigma))
+                - erf((left - E_ee) / (sqrt2 * sigma))
+            )
+            return phi * dsig * bin_prob
+
+        def recoil_integral(E_nu: float) -> float:
+            upper = float(cross_section.E_R_max(E_nu))
+            points = [p for p in (left, right) if 0.0 < p < upper]
+            val, _ = quad(
+                lambda E_R: integrand(E_R, E_nu),
+                0.0,
+                upper,
+                points=points,
+                limit=100,
+            )
+            return val
+
+        val, _ = quad(
+            recoil_integral,
+            float(E_nu_range[0]),
+            float(E_nu_range[1]),
+            limit=100,
         )
-        result[idx] = np.trapezoid(d_rate, E_det_grid)
+        result[idx] = N_T * val
 
     if exposure_s is not None:
         result = result * float(exposure_s)

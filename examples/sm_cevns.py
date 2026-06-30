@@ -38,7 +38,9 @@ import nurecoil.constants as C
 from nurecoil.nucleus import Nucleus, ISOTOPE_TABLE
 from nurecoil.cross_section.form_factors import HelmFormFactor
 from nurecoil.cross_section.sm_cevns import SMCEvNS
+from nurecoil.detector.resolution import CDEXResolution
 from nurecoil.flux.phenomenological import PhenomenologicalFlux
+from nurecoil.rate import compute_cevns_spectrum, target_count_from_mass
 
 plt.rcParams.update({"figure.dpi": 120, "font.size": 11})
 
@@ -382,6 +384,85 @@ ax.set_ylabel("Event Rate [events / atom / s]")
 ax.set_title("$\\sigma \\propto Q_W^2$ Check")
 ax.legend()
 ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ## 10. Binned CEvNS Detected-Energy Spectrum
+#
+# The high-level rate API assembles the reactor flux, SM CEvNS cross section,
+# Lindhard quenching, detector resolution, and target normalization into the
+# detected-energy bin spectrum
+#
+# $$
+# N_T \int_{\Delta E_{\rm det}} dE_{\rm det}
+#     \int dE_\nu \int dE_R\,
+#     \frac{d\Phi}{dE_\nu}
+#     \frac{d\sigma}{dE_R}
+#     f_{\rm res}\!\left(f_Q(E_R)E_R, E_{\rm det}\right).
+# $$
+#
+# Here `N_T` is the number of target atoms.  For a single-isotope target the
+# package uses the approximation $N_T = m_{\rm target}/A \times N_A$.
+
+# %%
+target_mass_g = 1000.0       # 1 kg Ge76
+exposure_days = 1.0
+exposure_s = exposure_days * 24.0 * 3600.0
+
+E_det_edges_keV = np.linspace(0.0, 0.30, 9)      # detected energy bins [keVee]
+E_det_edges_MeV = E_det_edges_keV / C.keV_per_MeV
+E_det_centers_keV = 0.5 * (E_det_edges_keV[:-1] + E_det_edges_keV[1:])
+bin_widths_keV = np.diff(E_det_edges_keV)
+
+N_T_ge76 = target_count_from_mass(target_mass_g, ge76)
+cevns_bin_rates = compute_cevns_spectrum(
+    E_det_edges_MeV,
+    flux_model,
+    nucleus=ge76,
+    target_mass_g=target_mass_g,
+    P=P_GW,
+    L=L_m,
+    E_nu_range=(E_nu_min, E_nu_max),
+    resolution=CDEXResolution(),
+)
+cevns_bin_counts = compute_cevns_spectrum(
+    E_det_edges_MeV,
+    flux_model,
+    nucleus=ge76,
+    target_mass_g=target_mass_g,
+    P=P_GW,
+    L=L_m,
+    E_nu_range=(E_nu_min, E_nu_max),
+    resolution=CDEXResolution(),
+    exposure_s=exposure_s,
+)
+
+print(f"Target mass: {target_mass_g / 1000:.1f} kg Ge76")
+print(f"N_T: {N_T_ge76:.3e} target atoms")
+print(f"Exposure: {exposure_days:.1f} day")
+print(f"Total CEvNS rate in plotted window: {cevns_bin_rates.sum():.3e} events/s")
+print(f"Total CEvNS counts in plotted window: {cevns_bin_counts.sum():.3e} events")
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+
+ax = axes[0]
+ax.step(E_det_edges_keV[:-1], cevns_bin_rates, where="post", color="royalblue", lw=2)
+ax.set_xlabel("$E_{\\rm det}$ [keVee]")
+ax.set_ylabel("Rate [events / s / bin]")
+ax.set_title("Binned CEvNS Detected Spectrum")
+ax.set_yscale("log")
+ax.grid(True, alpha=0.3)
+
+ax = axes[1]
+ax.bar(E_det_centers_keV, cevns_bin_counts, width=bin_widths_keV,
+       color="royalblue", alpha=0.8, edgecolor="black", linewidth=0.4)
+ax.set_xlabel("$E_{\\rm det}$ [keVee]")
+ax.set_ylabel(f"Counts / bin / {exposure_days:.0f} day")
+ax.set_title("Exposure-Scaled CEvNS Counts")
+ax.set_yscale("log")
+ax.grid(True, axis="y", alpha=0.3)
 
 plt.tight_layout()
 plt.show()

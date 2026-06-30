@@ -27,8 +27,8 @@ Commit only the `.py` file.
 
 | File | Description |
 |------|-------------|
-| [sm_cevns.py](sm_cevns.py) | SM CEvNS differential cross section, radiative corrections / flavor comparison, total cross section, and event rate |
-| [sm_eves.py](sm_eves.py) | SM EvES (elastic neutrino-electron scattering) differential cross section, flavor and antineutrino effects, $Z_{\rm eff}$ atomic ionization steps, and CEvNS vs EvES comparison |
+| [sm_cevns.py](sm_cevns.py) | SM CEvNS differential cross section, radiative corrections / flavor comparison, total cross section, event rate, and binned detected-energy spectrum |
+| [sm_eves.py](sm_eves.py) | SM EvES (elastic neutrino-electron scattering) differential cross section, flavor and antineutrino effects, $Z_{\rm eff}$ atomic ionization steps, CEvNS vs EvES comparison, and binned detected-energy spectrum |
 | [form_factors.py](form_factors.py) | Nuclear form factor models (Helm, Klein-Nystrand, Gaussian) — comparison and parameter sensitivity |
 | [phenomenological_flux.py](phenomenological_flux.py) | Phenomenological reactor antineutrino flux models |
 | [interpolated_flux.py](interpolated_flux.py) | Interpolated (tabulated) reactor antineutrino flux models |

@@ -35,6 +35,9 @@ from scipy.integrate import quad
 import nurecoil.constants as C
 from nurecoil.nucleus import Nucleus
 from nurecoil.cross_section.sm_eves import SMEvES
+from nurecoil.detector.resolution import CDEXResolution
+from nurecoil.flux.phenomenological import PhenomenologicalFlux
+from nurecoil.rate import compute_eves_spectrum, target_count_from_mass
 
 plt.rcParams.update({"figure.dpi": 120, "font.size": 11})
 
@@ -258,3 +261,78 @@ print("At E_ν = 5 MeV:")
 print(f"  CEvNS: {np.interp(5.0, E_nu_grid, sig_cevns):.3e} cm²")
 print(f"  EvES:  {np.interp(5.0, E_nu_grid, sig_eves):.3e} cm²")
 print(f"  Ratio CEvNS/EvES: {np.interp(5.0, E_nu_grid, sig_cevns) / np.interp(5.0, E_nu_grid, sig_eves):.1f}")
+
+# %% [markdown]
+# ## 8. Binned EvES Detected-Energy Spectrum
+#
+# The binned spectrum API can also be used for EvES.  The target normalization
+# is still the number of target atoms, not the number of electrons.  The EvES
+# cross section already includes the effective ionisable electron count
+# $Z_{\rm eff}(T)$, and the default EvES detector-energy mapping uses
+# $E_{\rm ee}=T$ through a unit quenching factor.
+
+# %%
+flux_model = PhenomenologicalFlux()
+P_GW = 3.0
+L_m = 30.0
+E_nu_min, E_nu_max = 1.8, 8.0
+
+target_mass_g = 1000.0       # 1 kg Ge76
+exposure_days = 1.0
+exposure_s = exposure_days * 24.0 * 3600.0
+
+E_det_edges_keV = np.linspace(0.0, 1000.0, 11)   # electron-recoil bins [keVee]
+E_det_edges_MeV = E_det_edges_keV / C.keV_per_MeV
+E_det_centers_keV = 0.5 * (E_det_edges_keV[:-1] + E_det_edges_keV[1:])
+bin_widths_keV = np.diff(E_det_edges_keV)
+
+N_T_ge76 = target_count_from_mass(target_mass_g, ge76)
+eves_bin_rates = compute_eves_spectrum(
+    E_det_edges_MeV,
+    flux_model,
+    nucleus=ge76,
+    target_mass_g=target_mass_g,
+    P=P_GW,
+    L=L_m,
+    E_nu_range=(E_nu_min, E_nu_max),
+    resolution=CDEXResolution(),
+)
+eves_bin_counts = compute_eves_spectrum(
+    E_det_edges_MeV,
+    flux_model,
+    nucleus=ge76,
+    target_mass_g=target_mass_g,
+    P=P_GW,
+    L=L_m,
+    E_nu_range=(E_nu_min, E_nu_max),
+    resolution=CDEXResolution(),
+    exposure_s=exposure_s,
+)
+
+print(f"Target mass: {target_mass_g / 1000:.1f} kg Ge76")
+print(f"N_T: {N_T_ge76:.3e} target atoms")
+print(f"Exposure: {exposure_days:.1f} day")
+print(f"Total EvES rate in plotted window: {eves_bin_rates.sum():.3e} events/s")
+print(f"Total EvES counts in plotted window: {eves_bin_counts.sum():.3e} events")
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+
+ax = axes[0]
+ax.step(E_det_edges_keV[:-1], eves_bin_rates, where="post", color="tomato", lw=2)
+ax.set_xlabel("$E_{\\rm det}$ [keVee]")
+ax.set_ylabel("Rate [events / s / bin]")
+ax.set_title("Binned EvES Detected Spectrum")
+ax.set_yscale("log")
+ax.grid(True, alpha=0.3)
+
+ax = axes[1]
+ax.bar(E_det_centers_keV, eves_bin_counts, width=bin_widths_keV,
+       color="tomato", alpha=0.8, edgecolor="black", linewidth=0.4)
+ax.set_xlabel("$E_{\\rm det}$ [keVee]")
+ax.set_ylabel(f"Counts / bin / {exposure_days:.0f} day")
+ax.set_title("Exposure-Scaled EvES Counts")
+ax.set_yscale("log")
+ax.grid(True, axis="y", alpha=0.3)
+
+plt.tight_layout()
+plt.show()
