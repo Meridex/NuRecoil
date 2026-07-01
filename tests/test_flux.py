@@ -590,3 +590,168 @@ class TestPhenoVsInterpolated:
         assert (p_db._e_bar - p_typ._e_bar) == pytest.approx(
             i_db._e_bar - i_typ._e_bar, rel=1e-10
         )
+
+
+# ---------------------------------------------------------------------------
+# TestTabulatedFlux
+# ---------------------------------------------------------------------------
+
+class TestTabulatedFlux:
+    """Tests for TabulatedFlux — loads a pre-computed absolute flux from CSV."""
+
+    def setup_method(self):
+        from nurecoil.flux.tabulated import TabulatedFlux
+        self.flux = TabulatedFlux()  # built-in default
+
+    # --- construction ---
+
+    def test_default_loads_without_error(self):
+        from nurecoil.flux.tabulated import TabulatedFlux
+        flux = TabulatedFlux()
+        assert flux.E_min > 0
+        assert flux.E_max > flux.E_min
+
+    def test_e_min_e_max_set_from_table(self):
+        assert self.flux.E_min < self.flux.E_max
+
+    # --- call ---
+
+    def test_positive_inside_range(self):
+        E_mid = np.array([(self.flux.E_min + self.flux.E_max) / 2.0])
+        phi = self.flux(E_mid, P=4.6, L=30.0)
+        assert phi[0] > 0
+
+    def test_zero_outside_range(self):
+        E_out = np.array([self.flux.E_min - 1.0, self.flux.E_max + 1.0])
+        phi = self.flux(E_out, P=4.6, L=30.0)
+        assert np.all(phi == 0.0)
+
+    # --- power / distance scaling ---
+
+    def test_linear_power_scaling(self):
+        E_mid = np.array([(self.flux.E_min + self.flux.E_max) / 2.0])
+        phi1 = self.flux(E_mid, P=1.0, L=100.0)
+        phi2 = self.flux(E_mid, P=2.0, L=100.0)
+        assert np.isclose(phi2 / phi1, 2.0, rtol=1e-6)
+
+    def test_inverse_square_distance_scaling(self):
+        E_mid = np.array([(self.flux.E_min + self.flux.E_max) / 2.0])
+        phi1 = self.flux(E_mid, P=4.6, L=10.0)
+        phi2 = self.flux(E_mid, P=4.6, L=20.0)
+        assert np.isclose(phi2 / phi1, 0.25, rtol=1e-6)
+
+    # --- reference values round-trip at (P_ref, L_ref) ---
+
+    def test_reference_condition_round_trip(self):
+        """At the reference (P_ref, L_ref) the output should match the table."""
+        from nurecoil.flux.tabulated import _parse_csv
+        E_table, flux_table, P_ref, L_ref = _parse_csv(self.flux._csv_path)
+        # Pick a midpoint index
+        idx = len(E_table) // 2
+        E_test = np.array([E_table[idx]])
+        phi = self.flux(E_test, P=P_ref, L=L_ref)
+        # PCHIP at a table knot should reproduce the value exactly (within float precision)
+        assert np.isclose(phi[0], flux_table[idx], rtol=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# TestLoadFlux
+# ---------------------------------------------------------------------------
+
+class TestLoadFlux:
+    """Tests for the unified load_flux() entry point."""
+
+    def test_pheno_spec(self):
+        from nurecoil.flux import load_flux, PhenomenologicalFlux
+        flux = load_flux("pheno:huber_mueller")
+        assert isinstance(flux, PhenomenologicalFlux)
+
+    def test_pheno_spec_with_kwargs(self):
+        from nurecoil.flux import load_flux
+        flux = load_flux("pheno:huber_mueller",
+                         fission_fractions="fractions:typical",
+                         energy_per_fission="energy:ma_2013")
+        E_mid = np.array([4.0])
+        assert flux(E_mid, P=1.0, L=500.0)[0] > 0
+
+    def test_interp_isospec_spec(self):
+        from nurecoil.flux import load_flux
+        from nurecoil.flux.interpolated import IsotopeInterpolatedFlux
+        flux = load_flux("interp:estienne2019")
+        assert isinstance(flux, IsotopeInterpolatedFlux)
+
+    def test_interp_composite_spec(self):
+        from nurecoil.flux import load_flux
+        from nurecoil.flux.interpolated import InterpolatedFlux
+        flux = load_flux("interp:kopeikin2012")
+        assert isinstance(flux, InterpolatedFlux)
+
+    def test_file_builtin_spec(self):
+        from nurecoil.flux import load_flux, TabulatedFlux
+        flux = load_flux("file:built-in")
+        assert isinstance(flux, TabulatedFlux)
+
+    def test_conflux_spec(self):
+        pytest.importorskip("conflux")  # skip if conflux not installed
+        from nurecoil.flux import load_flux
+        from nurecoil.flux.conflux import ConfluxFlux
+        flux = load_flux("conflux")
+        assert isinstance(flux, ConfluxFlux)
+
+    def test_unknown_prefix_raises(self):
+        from nurecoil.flux import load_flux
+        with pytest.raises(ValueError, match="unknown prefix"):
+            load_flux("bad:something")
+
+    def test_missing_prefix_raises(self):
+        from nurecoil.flux import load_flux
+        with pytest.raises(ValueError, match="must contain a prefix"):
+            load_flux("huber_mueller")
+
+    def test_pheno_unexpected_kwarg_raises(self):
+        from nurecoil.flux import load_flux
+        with pytest.raises(ValueError, match="unexpected keyword argument"):
+            load_flux("pheno:huber_mueller", extrapolate=True)
+
+    def test_file_unexpected_kwarg_raises(self):
+        from nurecoil.flux import load_flux
+        with pytest.raises(ValueError, match="unexpected keyword argument"):
+            load_flux("file:built-in", fission_fractions="typical")
+
+
+# ---------------------------------------------------------------------------
+# TestPrefixParams — prefix-form parameter strings are accepted everywhere
+# ---------------------------------------------------------------------------
+
+class TestPrefixParams:
+    """Verify that 'fractions:', 'energy:', 'spectrum:', 'dataset:' prefixes work."""
+
+    def test_fractions_prefix_in_reactor_mix(self):
+        from nurecoil.flux.reactor_mix import ReactorMix
+        rx = ReactorMix(fission_fractions="fractions:typical")
+        rx2 = ReactorMix(fission_fractions="typical")
+        assert rx.e_bar == pytest.approx(rx2.e_bar, rel=1e-10)
+
+    def test_energy_prefix_in_reactor_mix(self):
+        from nurecoil.flux.reactor_mix import ReactorMix
+        rx = ReactorMix(energy_per_fission="energy:ma_2013")
+        rx2 = ReactorMix(energy_per_fission="ma_2013")
+        assert rx.e_bar == pytest.approx(rx2.e_bar, rel=1e-10)
+
+    def test_spectrum_prefix_in_pheno(self):
+        from nurecoil.flux import PhenomenologicalFlux
+        f1 = PhenomenologicalFlux(spectrum_model="spectrum:huber_mueller")
+        f2 = PhenomenologicalFlux(spectrum_model="huber_mueller")
+        E = np.array([4.0])
+        np.testing.assert_allclose(
+            f1(E, P=1.0, L=500.0), f2(E, P=1.0, L=500.0), rtol=1e-10
+        )
+
+    def test_dataset_prefix_in_make_flux(self):
+        from nurecoil.flux.interpolated import make_flux
+        f1 = make_flux("dataset:estienne2019")
+        f2 = make_flux("estienne2019")
+        E = np.array([4.0])
+        np.testing.assert_allclose(
+            f1(E, P=1.0, L=500.0), f2(E, P=1.0, L=500.0), rtol=1e-10
+        )

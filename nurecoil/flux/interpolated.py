@@ -441,11 +441,14 @@ def make_flux(
     Parameters
     ----------
     source : str
-        Citation key, e.g. ``"estienne2019"`` or ``"kopeikin2012"``.
+        Citation key, e.g. ``"estienne2019"`` or ``"kopeikin2012"``, or
+        with the ``"dataset:<name>"`` prefix form.
     fission_fractions : str or dict, optional
         Passed to the underlying class.  Defaults to ``"typical"``.
+        Supports the ``"fractions:<name>"`` prefix form.
     energy_per_fission : str or dict, optional
         Passed to the underlying class.  Defaults to ``"ma_2013"``.
+        Supports the ``"energy:<name>"`` prefix form.
     extrapolate : bool
         Passed to the underlying class.  Defaults to ``False``.
 
@@ -455,10 +458,13 @@ def make_flux(
 
     Examples
     --------
-    >>> flux = make_flux("estienne2019")          # IsotopeInterpolatedFlux
-    >>> flux = make_flux("kopeikin2012")           # InterpolatedFlux
+    >>> flux = make_flux("estienne2019")               # bare name
+    >>> flux = make_flux("dataset:estienne2019")       # prefix form
+    >>> flux = make_flux("kopeikin2012")               # InterpolatedFlux
     >>> phi  = flux(E_nu, P=3.0, L=500.0)
     """
+    # Support "dataset:<name>" prefix as well as bare source name.
+    source = source.removeprefix("dataset:")
     if list_isotopes(source):
         return IsotopeInterpolatedFlux.from_source(
             source,

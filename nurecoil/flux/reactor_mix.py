@@ -135,12 +135,15 @@ class ReactorMix:
         if fission_fractions is None:
             fission_fractions = "typical"
         if isinstance(fission_fractions, str):
-            if fission_fractions not in FISSION_FRACTION_PRESETS:
+            # Support "fractions:<name>" prefix as well as bare preset name.
+            key = fission_fractions.removeprefix("fractions:")
+            if key not in FISSION_FRACTION_PRESETS:
                 raise ValueError(
-                    f"Unknown fission fraction preset '{fission_fractions}'. "
-                    f"Choose from: {list(FISSION_FRACTION_PRESETS)}"
+                    f"Unknown fission fraction preset '{key}'. "
+                    f"Choose from: {list(FISSION_FRACTION_PRESETS)}. "
+                    f"You can also use the 'fractions:<name>' prefix form."
                 )
-            fission_fractions = dict(FISSION_FRACTION_PRESETS[fission_fractions])
+            fission_fractions = dict(FISSION_FRACTION_PRESETS[key])
         total = sum(fission_fractions.values())
         if not np.isclose(total, 1.0, atol=1e-3):
             raise ValueError(
@@ -150,12 +153,15 @@ class ReactorMix:
 
         # --- resolve energy per fission ---
         if isinstance(energy_per_fission, str):
-            if energy_per_fission not in ENERGY_PER_FISSION_MODELS:
+            # Support "energy:<name>" prefix as well as bare model name.
+            key = energy_per_fission.removeprefix("energy:")
+            if key not in ENERGY_PER_FISSION_MODELS:
                 raise ValueError(
-                    f"Unknown energy-per-fission model '{energy_per_fission}'. "
-                    f"Choose from: {list(ENERGY_PER_FISSION_MODELS)}"
+                    f"Unknown energy-per-fission model '{key}'. "
+                    f"Choose from: {list(ENERGY_PER_FISSION_MODELS)}. "
+                    f"You can also use the 'energy:<name>' prefix form."
                 )
-            energy_per_fission = dict(ENERGY_PER_FISSION_MODELS[energy_per_fission])
+            energy_per_fission = dict(ENERGY_PER_FISSION_MODELS[key])
         self.energy_per_fission: dict[str, float] = energy_per_fission
 
         # e_bar = sum_i (f_i/F) * e_i  [MeV / fission]

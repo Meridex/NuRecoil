@@ -47,6 +47,9 @@ def _make_flux(config: dict):
             energy_per_fission=config.get("energy_per_fission", "ma_2013"),
             extrapolate=config.get("extrapolate", False),
         )
+    if model == "tabulated":
+        from nurecoil.flux.tabulated import TabulatedFlux
+        return TabulatedFlux(source=config.get("source"))
     if model == "conflux":
         from nurecoil.flux.conflux import ConfluxFlux
         return ConfluxFlux()

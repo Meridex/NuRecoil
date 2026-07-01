@@ -148,11 +148,13 @@ class PhenomenologicalFlux(FluxBase):
 
         # --- resolve spectrum model ---
         if isinstance(spectrum_model, str):
-            model_name = spectrum_model
+            # Support "spectrum:<name>" prefix as well as bare model name.
+            model_name = spectrum_model.removeprefix("spectrum:")
             if model_name not in SPECTRUM_MODELS:
                 raise ValueError(
                     f"Unknown spectrum model '{model_name}'. "
-                    f"Choose from: {list(SPECTRUM_MODELS)}"
+                    f"Choose from: {list(SPECTRUM_MODELS)}. "
+                    f"You can also use the 'spectrum:<name>' prefix form."
                 )
             spectrum_coeffs = SPECTRUM_MODELS[model_name]
             self.E_min, self.E_max = _SPECTRUM_ENERGY_RANGE[model_name]

@@ -4,15 +4,13 @@
   "target": {"Z": 32, "A": 76},
   "normalization": {
     "target_mass_g": 1000.0,
-    "P_GW": 3.0,
+    "P_GW": 4.6,
     "L_m": 30.0,
     "exposure_s": null
   },
   "flux": {
-    "model": "phenomenological",
-    "fission_fractions": "typical",
-    "spectrum_model": "huber_mueller",
-    "energy_per_fission": "ma_2013"
+    "model": "tabulated",
+    "source": null
   },
   "cross_section": {
     "model": "sm_cevns",
@@ -24,7 +22,7 @@
     "quenching": {"model": "lindhard", "k": null}
   },
   "integration": {
-    "E_nu_range_MeV": [1.8, 8.0]
+    "E_nu_range_MeV": [0.0005, 9.9995]
   },
   "reference": {
     "unit": "counts_per_s_per_bin",
