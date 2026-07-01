@@ -13,6 +13,7 @@ from nurecoil.cross_section.sm_cevns import SMCEvNS
 from nurecoil.cross_section.sm_eves import SMEvES
 from nurecoil.detector.quenching import ConstantQuenching, LindhardQuenching
 from nurecoil.detector.resolution import CDEXResolution, ConstantResolution
+from nurecoil.flux.interpolated import make_flux as make_interpolated_flux
 from nurecoil.flux.phenomenological import PhenomenologicalFlux
 from nurecoil.nucleus import Nucleus
 from nurecoil.rate import compute_cevns_spectrum, compute_eves_spectrum
@@ -29,13 +30,27 @@ def _load_case(path: Path) -> dict:
 
 
 def _make_flux(config: dict):
-    if config.get("model") != "phenomenological":
-        raise ValueError("Only phenomenological flux benchmarks are supported.")
-    return PhenomenologicalFlux(
-        fission_fractions=config.get("fission_fractions"),
-        spectrum_model=config.get("spectrum_model", "huber_mueller"),
-        energy_per_fission=config.get("energy_per_fission", "ma_2013"),
-    )
+    model = config.get("model")
+    if model == "phenomenological":
+        return PhenomenologicalFlux(
+            fission_fractions=config.get("fission_fractions"),
+            spectrum_model=config.get("spectrum_model", "huber_mueller"),
+            energy_per_fission=config.get("energy_per_fission", "ma_2013"),
+        )
+    if model == "interpolated":
+        source = config.get("source")
+        if not source:
+            raise ValueError("interpolated flux requires a 'source' field.")
+        return make_interpolated_flux(
+            source=source,
+            fission_fractions=config.get("fission_fractions"),
+            energy_per_fission=config.get("energy_per_fission", "ma_2013"),
+            extrapolate=config.get("extrapolate", False),
+        )
+    if model == "conflux":
+        from nurecoil.flux.conflux import ConfluxFlux
+        return ConfluxFlux()
+    raise ValueError(f"Unsupported flux model: {model!r}")
 
 
 def _make_resolution(config: dict):
