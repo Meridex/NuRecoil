@@ -61,6 +61,8 @@ class TestLindhardQuenching:
         expected = k * g / (1.0 + k * g)
         fq = LindhardQuenching()(np.array([1e-3]), self.ge)
         assert fq[0] == pytest.approx(expected, rel=1e-9)
+        expected = 0.16806636456360278731
+        assert fq[0] == pytest.approx(expected, rel=1e-9)
 
 
 class TestConstantQuenching:

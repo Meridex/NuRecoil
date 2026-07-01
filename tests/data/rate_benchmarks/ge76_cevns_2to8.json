@@ -22,16 +22,16 @@
     "quenching": {"model": "lindhard", "k": null}
   },
   "integration": {
-    "E_nu_range_MeV": [0.0005, 9.9995]
+    "E_nu_range_MeV": [2, 8]
   },
   "reference": {
     "unit": "counts_per_s_per_bin",
     "rtol": 0.005,
     "atol": 0.0,
     "bins": [
-      {"low_MeV": 0.00016, "high_MeV": 0.00026, "value": 8.294408937217707e-06},
-      {"low_MeV": 0.00026, "high_MeV": 0.00036, "value": 7.143413495917191e-07},
-      {"low_MeV": 0.00036, "high_MeV": 0.00046, "value": 7.540877068011744e-08}
+      {"low_MeV": 0.00016, "high_MeV": 0.00026, "value": 7.35712e-6},
+      {"low_MeV": 0.00026, "high_MeV": 0.00036, "value": 3.44404e-7},
+      {"low_MeV": 0.00036, "high_MeV": 0.00046, "value": 4.81063e-9}
     ]
   }
 }

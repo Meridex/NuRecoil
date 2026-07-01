@@ -9,7 +9,7 @@ Units (API boundary)
 
 Units (internal / output)
 --------------------------
-    $d\Phi/dE_\nu$ : # / MeV / cm^2
+    $d\Phi/dE_\nu$ : # / MeV / cm^2 / s
 
 Implementations must convert P and L on entry:
     L_cm          = L_m  * constants.cm_per_m
@@ -44,7 +44,7 @@ class FluxBase(ABC):
     * Define ``E_min`` and ``E_max`` class (or instance) attributes [MeV].
     * Implement ``_flux``, which receives only energies already validated to
       be within ``[E_min, E_max]`` and returns $d\Phi/dE_\nu$
-      [# / MeV / cm^2].
+      [# / MeV / cm^2 / s].
 
     ``__call__`` is provided by this base class. It masks out-of-range
     energies to zero. If ``warn_out_of_range`` is True, a ``UserWarning``
@@ -87,7 +87,7 @@ class FluxBase(ABC):
         Returns
         -------
         NDArray
-            $d\Phi/dE_\nu$  [# / MeV / cm^2], same shape as *E_nu*.
+            $d\Phi/dE_\nu$  [# / MeV / cm^2 / s], same shape as *E_nu*.
         """
         E_nu_arr = np.asarray(E_nu, dtype=float)
         in_range = (E_nu_arr >= self.E_min) & (E_nu_arr <= self.E_max)
@@ -123,6 +123,6 @@ class FluxBase(ABC):
         Returns
         -------
         NDArray
-            $d\Phi/dE_\nu$ [# / MeV / cm^2], same shape as *E_nu*.
+            $d\Phi/dE_\nu$ [# / MeV / cm^2 / s], same shape as *E_nu*.
         """
         ...

@@ -69,6 +69,14 @@ class TestHelmFormFactor:
         env_large = np.exp(-0.5 * (q_val * s_large / constants.hbar_c) ** 2)
         assert env_large < env_small
 
+    def test_benchmarks(self):
+
+        ff = HelmFormFactor()
+        q_val = 10.0
+        F = ff(np.array([q_val]), GE76)
+        val_benchmark = 0.992962380487098551
+        assert F[0] == pytest.approx(val_benchmark, abs=1e-6)
+
 
 class TestKleinNystrandFormFactor:
     def setup_method(self):
@@ -150,6 +158,19 @@ class TestSMCEvNS:
         M = GE76.M
         expected = 2.0 * E_nu ** 2 / (M + 2.0 * E_nu)
         assert self.xs.E_R_max(E_nu) == pytest.approx(expected, rel=1e-9)
+
+    def test_tree_value_benchmark(self):
+
+        xs_tree = SMCEvNS(GE76, flavor="tree")
+        E_nu, E_R = 5, 0.00016
+        val_tree = float(xs_tree(E_nu, E_R))
+        val_tree_benchmark = 4.16569710349041948e-37 # cm^2/MeV
+        assert abs(val_tree - val_tree_benchmark)/abs(val_tree_benchmark) < 1e-9
+
+        E_nu, E_R = 50.0, 0.01
+        val_tree = float(xs_tree(E_nu, E_R))
+        val_tree_benchmark = 3.78909661085607236e-37 # cm^2/MeV
+        assert abs(val_tree - val_tree_benchmark)/abs(val_tree_benchmark) < 1e-9
 
     def test_flavor_rc_differs_from_tree(self):
         # Radiative-corrected couplings must give different cross section than tree-level
