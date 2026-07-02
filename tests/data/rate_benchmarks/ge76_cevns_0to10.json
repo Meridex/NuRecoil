@@ -1,0 +1,37 @@
+{
+  "name": "ge76_cevns_tabulated_builtin",
+  "observable": "cevns",
+  "target": {"Z": 32, "A": 76},
+  "normalization": {
+    "target_mass_g": 1000.0,
+    "P_GW": 4.6,
+    "L_m": 30.0,
+    "exposure_s": null
+  },
+  "flux": {
+    "model": "tabulated",
+    "source": null
+  },
+  "cross_section": {
+    "model": "sm_cevns",
+    "flavor": "tree",
+    "form_factor": "helm"
+  },
+  "detector": {
+    "resolution": {"model": "cdex"},
+    "quenching": {"model": "lindhard", "k": null}
+  },
+  "integration": {
+    "E_nu_range_MeV": [0.0005, 9.9995]
+  },
+  "reference": {
+    "unit": "counts_per_s_per_bin",
+    "rtol": 0.005,
+    "atol": 0.0,
+    "bins": [
+      {"low_MeV": 0.00016, "high_MeV": 0.00026, "value": 8.29436e-6},
+      {"low_MeV": 0.00026, "high_MeV": 0.00036, "value": 7.14341e-7},
+      {"low_MeV": 0.00036, "high_MeV": 0.00046, "value": 7.54087e-8}
+    ]
+  }
+}
