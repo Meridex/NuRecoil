@@ -1,4 +1,95 @@
-"""nurecoil.flux — Neutrino flux module."""
+"""
+nurecoil.flux — Neutrino flux module.
+
+Quick Reference for :func:`load_flux`
+======================================
+
+``load_flux(spec, **kwargs)`` selects a flux backend via the *spec* string.
+All valid *spec* values and their accepted keyword arguments are listed below.
+
+------------------------------------------------------------------------------
+1. ``"pheno:<model>"``  →  PhenomenologicalFlux
+------------------------------------------------------------------------------
+Analytical exp-polynomial spectrum; valid energy range: 2–8 MeV for all models.
+
+    ``"huber_mueller"``  *(default)*
+        Huber 2011 for U235/Pu239/Pu241, Mueller 2011 for U238.
+        The standard combination used in the reactor-neutrino community.
+    ``"mueller_2011"``
+        Mueller et al. 2011 — all four isotopes.
+    ``"huber_2011"``
+        Huber 2011 — U235/Pu239/Pu241 only (no U238 coefficients;
+        raises an error if fission_fractions includes U238).
+    ``"vogel_1985"``
+        Vogel & Engel 1989 — simplified quadratic fit for all four isotopes.
+
+Accepted kwargs:
+
+    fission_fractions : str | dict | None
+        Per-isotope fission fractions.  Built-in preset names:
+            ``"typical"``    Typical commercial PWR (equilibrium)  *(default)*
+            ``"ksnps"``      Kuo-Sheng Nuclear Power Station
+            ``"conus"``      CONUS experiment
+            ``"daya_bay"``   Daya Bay experiment
+        A custom dict is also accepted, e.g. ``{"U235": 0.56, "U238": 0.08, ...}``.
+
+    energy_per_fission : str | dict | None
+        Effective thermal energy per fission [MeV].  Built-in preset names:
+            ``"ma_2013"``        Ma et al. 2013          *(default)*
+            ``"kopeikin_2004"``  Kopeikin et al. 2004
+            ``"james_1969"``     James 1969
+        A custom dict is also accepted, e.g. ``{"U235": 202.36, ...}``.
+
+------------------------------------------------------------------------------
+2. ``"interp:<dataset>"``  →  InterpolatedFlux / IsotopeInterpolatedFlux
+------------------------------------------------------------------------------
+Numerically interpolated tabulated spectra.  Mode (composite vs. isotope) is
+selected automatically based on the bundled data files.
+
+Isotope mode — per-actinide spectra (U235, U238, Pu239, Pu241):
+
+    ``"estienne2019"``   Estienne et al. 2019   0.05 – 10.05 MeV
+    ``"mueller2011"``    Mueller et al. 2011     2.0  –  8.0  MeV
+    ``"vogel1989"``      Vogel & Engel 1989      ~0.008 – 2.0 MeV
+    ``"CEA2023"``        CEA 2023                ~0.01 – 12.5 MeV
+
+Composite mode — pre-weighted total spectrum:
+
+    ``"kopeikin2012"``   Kopeikin et al. 2012   0.01 –  9.0 MeV
+    ``"kopeikin1999"``   Kopeikin et al. 1999   ~0.005 – 1.5 MeV
+
+Accepted kwargs:
+
+    fission_fractions : str | dict | None
+        Same preset names as above.
+        (Only meaningful in isotope mode; ignored for composite datasets.)
+
+    energy_per_fission : str | dict | None
+        Same preset names as above.
+
+    extrapolate : bool
+        Allow extrapolation outside the tabulated energy range (default: False).
+
+------------------------------------------------------------------------------
+3. ``"file:<path>"``  →  TabulatedFlux
+------------------------------------------------------------------------------
+Load an arbitrary two-column CSV file (E_nu [MeV], dN_dE [# / MeV / fission]).
+Energy range is determined by the file content.
+
+    ``"file:built-in"``           Use the bundled example spectrum file. 0.0005 - 9.9995 MeV
+    ``"file:/absolute/path.csv"`` Load a user-supplied CSV file.
+
+Accepted kwargs: none.
+
+------------------------------------------------------------------------------
+4. ``"conflux"``  →  ConfluxFlux
+------------------------------------------------------------------------------
+Interface to the external ``conflux`` package (must be installed separately).
+
+Accepted kwargs: none.
+
+------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
