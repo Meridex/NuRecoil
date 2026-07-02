@@ -1,0 +1,28 @@
+name: NURECOIL
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # ── Python runtime ──────────────────────────────────────────────────────────
+  - python>=3.10
+
+  # ── Core scientific stack (conda-managed for binary compatibility) ───────────
+  - numpy>=1.24
+  - scipy>=1.11
+
+  # ── Development & testing ───────────────────────────────────────────────────
+  - matplotlib>=3.7
+  - pytest>=7.4
+  - pytest-cov>=4.1
+
+  # ── Notebook support ────────────────────────────────────────────────────────
+  - jupyterlab
+  - ipykernel
+  - jupytext>=1.16
+
+  # ── pip-only packages ───────────────────────────────────────────────────────
+  - pip
+  - pip:
+      - -e .          # install nurecoil itself in editable mode
